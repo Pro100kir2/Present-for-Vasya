@@ -186,4 +186,5 @@ def send_message():
 
 
 if __name__ == '__main__':
+    refresh_token()
     app.run(debug=True)
