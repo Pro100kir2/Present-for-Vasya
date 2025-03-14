@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат с Василием</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #0d0d0d;
+            color: #00ff99;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px #00ff99;
+        }
+        input {
+            background: #222;
+            border: 1px solid #00ff99;
+            color: #00ff99;
+            padding: 10px;
+            width: 80%;
+            margin-top: 10px;
+        }
+        button {
+            background: #00ff99;
+            color: #000;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+        .messages {
+            text-align: left;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .message {
+            background: #222;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .user {
+            text-align: right;
+            color: #00ff99;
+        }
+        .assistant {
+            text-align: left;
+            color: #ff9900;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Чат с Василием</h2>
+        <div class="messages" id="chat"></div>
+        <input type="text" id="userInput" placeholder="Введите сообщение..." oninput="toggleButton()">
+        <button id="sendButton" onclick="sendMessage()" disabled>Отправить</button>
+    </div>
+
+    <script>
+        function toggleButton() {
+            document.getElementById('sendButton').disabled = document.getElementById('userInput').value.trim() === "";
+        }
+
+        function sendMessage() {
+    let inputField = document.getElementById('userInput');
+    let message = inputField.value.trim();
+    if (message === "") return;
+
+    let chatBox = document.getElementById('chat');
+    let userMessage = `<div class="message user">Вы: ${message}</div>`;
+    chatBox.innerHTML += userMessage;
+    inputField.value = "";
+    toggleButton();
+
+    fetch('/send_message', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: message})
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);  // Логируем ответ от сервера
+        if (data.response) {
+            let botMessage = `<div class="message assistant">Василий: ${data.response}</div>`;
+            chatBox.innerHTML += botMessage;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } else {
+            console.error('Ошибка: Ответ не содержит данных');
+        }
+    })
+    .catch(error => console.error('Ошибка:', error));
+}
+
+    </script>
+</body>
+</html>
