@@ -2,7 +2,8 @@ import os
 import json
 import requests
 import urllib3
-from dotenv import load_dotenv, set_key
+import mysql.connector
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 import re
 import threading
@@ -11,17 +12,53 @@ import time
 # Загрузка переменных окружения
 load_dotenv()
 
-# Получение токенов
-SECRET_KEY = os.getenv('SECRET_KEY')
-
 # Отключаем предупреждения SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = SECRET_KEY
+# Конфигурация базы данных
+MYSQL_URL = os.getenv("MYSQL_URL")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+# Разбираем строку подключения
+db_config = MYSQL_URL.replace("mysql://", "")
+user_password, rest = db_config.split("@")
+user, password = user_password.split(":")
+host_port, database = rest.split("/")
+host, port = host_port.split(":")
 
 
-# Функция для получения нового токена
+# Функция подключения к базе данных
+def get_db_connection():
+    return mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database,
+        port=int(port)
+    )
+
+
+# Функция получения initial_token из БД
+def fetch_initial_token():
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT initial_token FROM tokens LIMIT 1;")
+        token = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if token:
+            print("📌 Initial Token:", token[0])
+            return token[0]
+        else:
+            print("❌ Initial Token не найден в базе данных.")
+            return None
+    except Exception as e:
+        print("⚠ Ошибка при подключении к базе данных:", e)
+        return None
+
+
+# Функция обновления initial_token
 def refresh_token():
     url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     payload = {'scope': 'GIGACHAT_API_PERS'}
@@ -35,39 +72,41 @@ def refresh_token():
     try:
         response = requests.post(url, headers=headers, data=payload, verify=False)
         if response.status_code == 200:
-            token = response.json().get('access_token')
-            if token:
-                set_key('.env', 'ACCESS_TOKEN', token)
-                print("🔄 Токен обновлён!")
-                print(f"Новый токен :  {token}")
-                return token
+            new_token = response.json().get('access_token')
+            if new_token:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("UPDATE tokens SET initial_token = %s WHERE id = 1;", (new_token,))
+                conn.commit()
+                conn.close()
+                print("🔄 Initial Token обновлён!")
+                return new_token
         print(f"❌ Ошибка получения токена: {response.status_code}")
     except requests.RequestException as e:
         print(f"⚠ Ошибка сети при получении токена: {str(e)}")
-
     return None
 
-
-# Фоновый процесс обновления токена каждые 30 минут
+# Фоновый процесс обновления токена
 def token_updater():
     while True:
         refresh_token()
-        time.sleep(1650)  # Обновление токена каждые ~29 минут
+        time.sleep(1650)  # Обновление токена каждые ~27 минут
 
 
 # Запускаем обновление токена в отдельном потоке
 threading.Thread(target=token_updater, daemon=True).start()
 
 
-# Функция для извлечения актуального токена
-def get_access_token():
-    return os.getenv('ACCESS_TOKEN') or refresh_token()
+# Flask-приложение
+app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
+
+conversation_history = []
 
 
 # Функция кастомных ответов
 def get_custom_reply(question):
     normalized_question = re.sub(r'\W+', ' ', question.strip().lower())
-
     custom_replies = {
         "какой лучший язык программирования": "Конечно, тот, которым ты уже зарабатываешь!",
         "лучший язык программирования": "Конечно, тот, которым ты уже зарабатываешь!",
@@ -133,12 +172,17 @@ def get_custom_reply(question):
 # Функция общения с GigaChat
 def get_chat_completions(user_message, conversation_history):
     url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
-    auth_token = get_access_token()
+
+    # Используем fetch_initial_token() для получения токена
+    auth_token = fetch_initial_token()
+
+    if not auth_token:
+        return "Ошибка: Токен не найден.", conversation_history
 
     if not any(msg['role'] == 'system' for msg in conversation_history):
         conversation_history.insert(0, {
             "role": "system",
-            "content": "Отвечай как опытный айтишник 1982 года, используя IT-сленг и давая пищу для размышлений."
+            "content": "Отвечай как трушный айтишник 1982 года, используя IT-сленг и давая пищу для размышлений. Ты веселый, мудрый, находчивый, много шутишь, спокойный. Тебя зовут Ассистент Василий , тебя создал Лупанов Кирилл  "
         })
 
     custom_reply = get_custom_reply(user_message)
@@ -170,10 +214,6 @@ def index():
 @app.route('/chat')
 def chat():
     return render_template('chat.html')
-
-
-conversation_history = []
-
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
