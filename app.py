@@ -196,9 +196,10 @@ def get_chat_completions(user_message, conversation_history):
 
     try:
         response = requests.post(url, headers=headers, data=payload, timeout=10, verify=False)
-        if response.status_code != 200:
+        if response.status_code != 200 and response.status_code != 401:
             return f"Ошибка API: {response.status_code} - {response.text}", conversation_history
-
+        else:
+            refresh_token()
         assistant_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         conversation_history.append({"role": "assistant", "content": assistant_content})
         return assistant_content, conversation_history
