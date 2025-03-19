@@ -200,12 +200,11 @@ def get_chat_completions(user_message, conversation_history):
             return f"Ошибка API: {response.status_code} - {response.text}", conversation_history
         else:
             refresh_token()
-        assistant_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        conversation_history.append({"role": "assistant", "content": assistant_content})
-        return assistant_content, conversation_history
+            assistant_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            conversation_history.append({"role": "assistant", "content": assistant_content})
+            return assistant_content, conversation_history
     except requests.RequestException as e:
         return f"Ошибка при получении ответа: {str(e)}", conversation_history
-
 
 @app.route('/')
 def index():
@@ -215,6 +214,16 @@ def index():
 @app.route('/chat')
 def chat():
     return render_template('chat.html')
+
+# Функция форматирования ответа
+def format_response(text, is_code=False, is_list=False):
+    if is_code:
+        return f"```python\n{text}\n```"
+    elif is_list:
+        items = text.split(", ")
+        formatted_list = "\n".join([f"{i+1}. {item}" for i, item in enumerate(items)])
+        return formatted_list
+    return text
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
