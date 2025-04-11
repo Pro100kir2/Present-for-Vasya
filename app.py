@@ -209,11 +209,6 @@ def get_chat_completions(user_message, conversation_history):
 
 @app.route('/')
 def index():
-    return render_template('present-for-vasya.html')
-
-
-@app.route('/chat')
-def chat():
     return render_template('chat.html')
 
 # Функция форматирования ответа
