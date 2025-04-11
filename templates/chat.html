@@ -162,6 +162,26 @@
       border-radius: 8px;
       overflow-x: auto;
     }
+
+    .copy-button {
+      background-color: #444;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+
+    .copy-button:hover {
+      background-color: #333;
+    }
+
+    .copy-button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -179,38 +199,47 @@
     let isBotTyping = false;
     let typingTimeout;
     let botMessageDiv;
+    let welcomeMessageDiv = null; // Переменная для хранения приветственного сообщения
+
+    // Добавляем приветственное сообщение, если чат пуст
+    window.onload = function() {
+      const chatBox = document.getElementById('chat');
+      if (chatBox.children.length === 0) {
+        welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться. Вот что я умею:\n" +
+          "Рассказывать анекдоты,  \n писать код,  \n выслушать если муж не заметил новый маникюр,  \n написать стих для той самой и многое другое!");
+      }
+    };
 
     function toggleButton() {
-  const input = document.getElementById('userInput');
-  const btn = document.getElementById('sendButton');
+      const input = document.getElementById('userInput');
+      const btn = document.getElementById('sendButton');
 
-  if (isBotTyping) {
-    btn.disabled = false;
-    btn.textContent = "❌";
-    btn.classList.add("cancel");
-  } else {
-    btn.disabled = input.value.trim() === "";
-    btn.textContent = input.value.trim() === "" ? "→" : "→";
-    btn.classList.remove("cancel");
-  }
+      if (isBotTyping) {
+        btn.disabled = false;
+        btn.textContent = "❌";
+        btn.classList.add("cancel");
+      } else {
+        btn.disabled = input.value.trim() === "";
+        btn.textContent = input.value.trim() === "" ? "→" : "→";
+        btn.classList.remove("cancel");
+      }
 
-  // Добавляем обработчик для кнопки "Отменить"
-  btn.onclick = function() {
-    if (isBotTyping) {
-      stopTyping(); // Останавливаем печать
-    } else {
-      sendMessage(); // Отправляем сообщение
+      // Добавляем обработчик для кнопки "Отменить"
+      btn.onclick = function() {
+        if (isBotTyping) {
+          stopTyping(); // Останавливаем печать
+        } else {
+          sendMessage(); // Отправляем сообщение
+        }
+      };
     }
-  };
-}
 
-function stopTyping() {
-  clearTimeout(typingTimeout);  // Прерываем таймер печати
-  isBotTyping = false;  // Устанавливаем флаг, что бот не печатает
-  toggleButton();  // Обновляем кнопку (переводим обратно на "Отправить")
-  botMessageDiv.textContent = '';  // Очищаем текст бота (если это нужно)
-}
-
+    function stopTyping() {
+      clearTimeout(typingTimeout);  // Прерываем таймер печати
+      isBotTyping = false;  // Устанавливаем флаг, что бот не печатает
+      toggleButton();  // Обновляем кнопку (переводим обратно на "Отправить")
+      botMessageDiv.textContent = '';  // Очищаем текст бота (если это нужно)
+    }
 
     function autoResize() {
       const input = document.getElementById('userInput');
@@ -227,20 +256,29 @@ function stopTyping() {
       div.className = `message ${sender}`;
 
       if (sender === 'assistant') {
-        // Преобразуем сообщение в Markdown
-        div.innerHTML = marked.parse(content);
+        div.innerHTML = content; // Преобразуем сообщение в Markdown (если нужно)
       } else {
         div.textContent = content;
       }
 
-      wrapper.appendChild(div);
+      if (sender === 'assistant') {
+        // Добавляем кнопку "Копировать" только для ответов Василия
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-button';
+        copyButton.textContent = 'Скопировать';
+        copyButton.onclick = function() {
+          navigator.clipboard.writeText(content).then(function() {
+            alert('Сообщение скопировано!');
+          });
+        };
+
+        wrapper.appendChild(div);
+        wrapper.appendChild(copyButton);
+      } else {
+        wrapper.appendChild(div);
+      }
       chatBox.appendChild(wrapper);
       chatBox.scrollTop = chatBox.scrollHeight;
-
-      if (sender === 'assistant') {
-        // Подсветка синтаксиса
-        hljs.highlightAll();
-      }
     }
 
     function simulateBotTyping(content) {
@@ -267,14 +305,12 @@ function stopTyping() {
         } else {
           isBotTyping = false;
           toggleButton(); // обновляем кнопку
-          // Преобразуем сообщение в Markdown
-          botMessageDiv.innerHTML = marked.parse(content);
-          // Применяем подсветку синтаксиса
-          hljs.highlightAll();
+          botMessageDiv.innerHTML = content;
         }
       }
 
       typeMessage();
+      return wrapper; // Возвращаем обертку для дальнейшего удаления
     }
 
     function sendMessage() {
@@ -286,6 +322,13 @@ function stopTyping() {
       input.value = "";
       autoResize();
       toggleButton();
+
+      // Удаляем приветственное сообщение, если оно было
+      const chatBox = document.getElementById('chat');
+      if (welcomeMessageDiv) {
+        chatBox.removeChild(welcomeMessageDiv);
+        welcomeMessageDiv = null; // Обнуляем переменную
+      }
 
       if (isBotTyping) stopTyping();
 
