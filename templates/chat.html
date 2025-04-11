@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Чат с Василием</title>
-
+  <link rel="icon" type="image/png" href="vasia.png" />
   <style>
     :root {
       --bg: #1e1e1e;
@@ -148,11 +148,12 @@
       border-radius: 3px;
     }
 
-    .cancel-button {
+    button.cancel {
       background-color: #f44336;
-      margin-left: 10px;
-      display: inline-block;
-      visibility: hidden;
+    }
+
+    button.cancel:hover {
+      background-color: #d32f2f;
     }
 
     pre {
@@ -171,7 +172,6 @@
     <div class="input-area">
       <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
       <button id="sendButton" onclick="sendMessage()" disabled>→</button>
-      <button id="cancelButton" onclick="stopTyping()" class="cancel-button">Отменить</button>
     </div>
   </div>
 
@@ -181,10 +181,36 @@
     let botMessageDiv;
 
     function toggleButton() {
-      const input = document.getElementById('userInput');
-      const btn = document.getElementById('sendButton');
-      btn.disabled = input.value.trim() === "" || isBotTyping;
+  const input = document.getElementById('userInput');
+  const btn = document.getElementById('sendButton');
+
+  if (isBotTyping) {
+    btn.disabled = false;
+    btn.textContent = "❌";
+    btn.classList.add("cancel");
+  } else {
+    btn.disabled = input.value.trim() === "";
+    btn.textContent = input.value.trim() === "" ? "→" : "→";
+    btn.classList.remove("cancel");
+  }
+
+  // Добавляем обработчик для кнопки "Отменить"
+  btn.onclick = function() {
+    if (isBotTyping) {
+      stopTyping(); // Останавливаем печать
+    } else {
+      sendMessage(); // Отправляем сообщение
     }
+  };
+}
+
+function stopTyping() {
+  clearTimeout(typingTimeout);  // Прерываем таймер печати
+  isBotTyping = false;  // Устанавливаем флаг, что бот не печатает
+  toggleButton();  // Обновляем кнопку (переводим обратно на "Отправить")
+  botMessageDiv.textContent = '';  // Очищаем текст бота (если это нужно)
+}
+
 
     function autoResize() {
       const input = document.getElementById('userInput');
@@ -219,6 +245,7 @@
 
     function simulateBotTyping(content) {
       isBotTyping = true;
+      toggleButton(); // обновляем кнопку
       const chatBox = document.getElementById('chat');
       const wrapper = document.createElement('div');
       wrapper.className = 'assistant-wrapper';
@@ -231,8 +258,6 @@
       chatBox.scrollTop = chatBox.scrollHeight;
 
       let index = 0;
-      const cancelButton = document.getElementById('cancelButton');
-      cancelButton.style.visibility = 'visible';
 
       function typeMessage() {
         if (index < content.length) {
@@ -241,8 +266,7 @@
           typingTimeout = setTimeout(typeMessage, 30);
         } else {
           isBotTyping = false;
-          toggleButton();
-          cancelButton.style.visibility = 'hidden';
+          toggleButton(); // обновляем кнопку
           // Преобразуем сообщение в Markdown
           botMessageDiv.innerHTML = marked.parse(content);
           // Применяем подсветку синтаксиса
@@ -251,14 +275,6 @@
       }
 
       typeMessage();
-    }
-
-    function stopTyping() {
-      clearTimeout(typingTimeout);
-      isBotTyping = false;
-      toggleButton();
-      botMessageDiv.textContent = '';
-      document.getElementById('cancelButton').style.visibility = 'hidden';
     }
 
     function sendMessage() {
