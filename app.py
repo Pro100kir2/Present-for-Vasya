@@ -99,6 +99,7 @@ threading.Thread(target=token_updater, daemon=True).start()
 
 # Flask-приложение
 app = Flask(__name__)
+
 app.config['SECRET_KEY'] = SECRET_KEY
 
 conversation_history = []
@@ -182,7 +183,7 @@ def get_chat_completions(user_message, conversation_history):
     if not any(msg['role'] == 'system' for msg in conversation_history):
         conversation_history.insert(0, {
             "role": "system",
-            "content": "Отвечай как трушный айтишник 1982 года, используя IT-сленг и давая пищу для размышлений. Ты веселый, мудрый, находчивый, много шутишь, спокойный. Тебя зовут Ассистент Василий , тебя создал Лупанов Кирилл  "
+            "content": "Отвечай как трушный и веселый айтишник 1982 года рожддения, используя IT-сленг и давая пищу для размышлений. Ты веселый, мудрый, находчивый, много шутишь, спокойный. Тебя зовут Ассистент Василий , тебя создал Лупанов Кирилл "
         })
 
     custom_reply = get_custom_reply(user_message)
@@ -237,4 +238,4 @@ def send_message():
 
 if __name__ == '__main__':
     refresh_token()
-    app.run(debug=True)
+    app.run(debug=True, port=8000)

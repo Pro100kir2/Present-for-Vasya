@@ -1,111 +1,296 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Чат с Василием</title>
-    <style>
-        body {
-            font-family: 'Courier New', monospace;
-            background-color: #0d0d0d;
-            color: #00ff99;
-            text-align: center;
-            padding: 50px;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px #00ff99;
-        }
-        input {
-            background: #222;
-            border: 1px solid #00ff99;
-            color: #00ff99;
-            padding: 10px;
-            width: 80%;
-            margin-top: 10px;
-        }
-        button {
-            background: #00ff99;
-            color: #000;
-            border: none;
-            padding: 10px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:disabled {
-            background: gray;
-            cursor: not-allowed;
-        }
-        .messages {
-            text-align: left;
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .message {
-            background: #222;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-        }
-        .user {
-            text-align: right;
-            color: #00ff99;
-        }
-        .assistant {
-            text-align: left;
-            color: #ff9900;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Чат с Василием</title>
+
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --input-bg: #2a2a2a;
+      --text: #f5f5f5;
+      --user-msg-bg: #0f766e;
+      --assistant-msg-bg: #2d2d2d;
+      --accent: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 24px;
+      background-color: #111;
+      border-bottom: 1px solid #333;
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      max-height: calc(100vh - 220px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      word-break: break-word;
+      display: inline-block;
+    }
+
+    .user-wrapper {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .assistant-wrapper {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .user {
+      background-color: var(--user-msg-bg);
+      color: #fff;
+      border-bottom-right-radius: 0;
+    }
+
+    .assistant {
+      background-color: var(--assistant-msg-bg);
+      color: #d4d4d4;
+      border-bottom-left-radius: 0;
+    }
+
+    .input-area {
+      display: flex;
+      border-top: 1px solid #333;
+      padding: 16px 0 0;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 44px;
+      max-height: 200px;
+      resize: none;
+      overflow-y: auto;
+      background-color: var(--input-bg);
+      color: var(--text);
+      padding: 12px 16px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      line-height: 1.4;
+    }
+
+    button {
+      background-color: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      height: auto;
+      display: flex;
+      align-items: center;
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #0f9f75;
+    }
+
+    .messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 3px;
+    }
+
+    .cancel-button {
+      background-color: #f44336;
+      margin-left: 10px;
+      display: inline-block;
+      visibility: hidden;
+    }
+
+    pre {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Чат с Василием</h2>
-        <div class="messages" id="chat"></div>
-        <input type="text" id="userInput" placeholder="Введите сообщение..." oninput="toggleButton()">
-        <button id="sendButton" onclick="sendMessage()" disabled>Отправить</button>
+  <header>Чат с Василием</header>
+
+  <div class="chat-container">
+    <div class="messages" id="chat"></div>
+    <div class="input-area">
+      <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
+      <button id="sendButton" onclick="sendMessage()" disabled>→</button>
+      <button id="cancelButton" onclick="stopTyping()" class="cancel-button">Отменить</button>
     </div>
+  </div>
 
-    <script>
-        function toggleButton() {
-            document.getElementById('sendButton').disabled = document.getElementById('userInput').value.trim() === "";
-        }
+  <script>
+    let isBotTyping = false;
+    let typingTimeout;
+    let botMessageDiv;
 
-        function sendMessage() {
-    let inputField = document.getElementById('userInput');
-    let message = inputField.value.trim();
-    if (message === "") return;
+    function toggleButton() {
+      const input = document.getElementById('userInput');
+      const btn = document.getElementById('sendButton');
+      btn.disabled = input.value.trim() === "" || isBotTyping;
+    }
 
-    let chatBox = document.getElementById('chat');
-    let userMessage = `<div class="message user">Вы: ${message}</div>`;
-    chatBox.innerHTML += userMessage;
-    inputField.value = "";
-    toggleButton();
+    function autoResize() {
+      const input = document.getElementById('userInput');
+      input.style.height = "auto";
+      input.style.height = (input.scrollHeight) + "px";
+    }
 
-    fetch('/send_message', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({message: message})
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data);  // Логируем ответ от сервера
-        if (data.response) {
-            let botMessage = `<div class="message assistant">Василий: ${data.response}</div>`;
-            chatBox.innerHTML += botMessage;
-            chatBox.scrollTop = chatBox.scrollHeight;
+    function appendMessage(content, sender) {
+      const chatBox = document.getElementById('chat');
+      const wrapper = document.createElement('div');
+      wrapper.className = sender === 'user' ? 'user-wrapper' : 'assistant-wrapper';
+
+      const div = document.createElement('div');
+      div.className = `message ${sender}`;
+
+      if (sender === 'assistant') {
+        // Преобразуем сообщение в Markdown
+        div.innerHTML = marked.parse(content);
+      } else {
+        div.textContent = content;
+      }
+
+      wrapper.appendChild(div);
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (sender === 'assistant') {
+        // Подсветка синтаксиса
+        hljs.highlightAll();
+      }
+    }
+
+    function simulateBotTyping(content) {
+      isBotTyping = true;
+      const chatBox = document.getElementById('chat');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'assistant-wrapper';
+      botMessageDiv = document.createElement('div');
+      botMessageDiv.className = 'message assistant';
+      botMessageDiv.textContent = '';
+
+      wrapper.appendChild(botMessageDiv);
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      let index = 0;
+      const cancelButton = document.getElementById('cancelButton');
+      cancelButton.style.visibility = 'visible';
+
+      function typeMessage() {
+        if (index < content.length) {
+          botMessageDiv.textContent += content[index];
+          index++;
+          typingTimeout = setTimeout(typeMessage, 30);
         } else {
-            console.error('Ошибка: Ответ не содержит данных');
+          isBotTyping = false;
+          toggleButton();
+          cancelButton.style.visibility = 'hidden';
+          // Преобразуем сообщение в Markdown
+          botMessageDiv.innerHTML = marked.parse(content);
+          // Применяем подсветку синтаксиса
+          hljs.highlightAll();
         }
-    })
-    .catch(error => console.error('Ошибка:', error));
-}
+      }
 
-    </script>
+      typeMessage();
+    }
+
+    function stopTyping() {
+      clearTimeout(typingTimeout);
+      isBotTyping = false;
+      toggleButton();
+      botMessageDiv.textContent = '';
+      document.getElementById('cancelButton').style.visibility = 'hidden';
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('userInput');
+      const message = input.value.trim();
+      if (message === "") return;
+
+      appendMessage(message, 'user');
+      input.value = "";
+      autoResize();
+      toggleButton();
+
+      if (isBotTyping) stopTyping();
+
+      fetch('/send_message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.response) {
+            simulateBotTyping(data.response);
+          } else {
+            simulateBotTyping("Произошла ошибка, Василий молчит.");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
+        });
+    }
+  </script>
 </body>
 </html>
