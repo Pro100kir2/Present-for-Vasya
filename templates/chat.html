@@ -47,7 +47,7 @@
 
     .user-info {
       position: absolute;
-      top: 16px;
+      top: 10px;
       right: 24px;
       cursor: pointer;
       display: flex;
@@ -71,6 +71,8 @@
       border-radius: 8px;
       width: 150px;
       box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+        z-index: 1000;     /* высокий индекс */
+
     }
 
     .user-info:hover .dropdown {
@@ -115,13 +117,14 @@
 
     .message {
       max-width: 75%;
-      padding: 12px 16px;
+      padding: 32px 16px;
       border-radius: 12px;
-      white-space: pre-wrap;
+      white-space: normal;
       line-height: 1.5;
       word-break: break-word;
       display: inline-block;
       position: relative;
+
     }
 
     .user-wrapper { display: flex; justify-content: flex-end; }
@@ -212,7 +215,7 @@
       left: 8px;
       background-color: transparent;
       border: none;
-      color: #aaa;
+      color: #fff;
       font-size: 18px;
       cursor: pointer;
     }
@@ -223,10 +226,12 @@
 
     .timestamp {
       font-size: 12px;
-      color: #888;
-      margin-top: 6px;
-      display: block;
+      color: #ffffff;
+      position: absolute;
+      bottom: 6px;  /* Располагаем внизу */
+      right: 16px;  /* По желанию, отступ от правого края */
       text-align: right;
+      margin-top: 0; /* Убираем верхний отступ */
     }
   </style>
 </head>
@@ -241,6 +246,9 @@
               <a href="/setting" id="settingsLink">Setting</a>
               <a href="/pay" id="upgradeLink">Upload plan</a>
               <a href="/logout" id="logoutLink">Logout</a>
+              <form action="/clean" method="post" style="display: inline;" onsubmit="return confirmClear();">
+                <button type="submit" class="cancel">🗑 Clear chat</button>
+              </form>
           </div>
       {% else %}
           <!-- Если пользователь не вошел, показываем ссылки для входа и регистрации -->
@@ -250,7 +258,7 @@
               <a href="/register" id="registerLink">Add new</a>
       {% endif %}
     </div>
-  </header>
+    </header>
 
 <div class="chat-container">
   <div class="messages" id="chat">
@@ -432,7 +440,7 @@
       if (sender === 'assistant') {
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-button';
-        copyButton.innerHTML = '📋';
+        copyButton.innerHTML = '⧉';
         copyButton.title = 'Copy';
         copyButton.onclick = function () {
           navigator.clipboard.writeText(content).then(() => {
@@ -484,7 +492,7 @@
 
           const copyButton = document.createElement('button');
           copyButton.className = 'copy-button';
-          copyButton.innerHTML = '📋';
+          copyButton.innerHTML = '⧉';
           copyButton.title = 'Copy';
           copyButton.onclick = function () {
             navigator.clipboard.writeText(content).then(() => {
@@ -499,7 +507,9 @@
       setTimeout(typeMessage, 30);
       return wrapper;
     }
-
+    function confirmClear() {
+        return confirm("Вы уверены, что хотите очистить переписку?");
+    }
     function sendMessage() {
       const input = document.getElementById('userInput');
       const message = input.value.trim();

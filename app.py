@@ -4,7 +4,7 @@ import requests
 import urllib3
 import mysql.connector
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, flash
 import re
 import threading
 import time
@@ -344,6 +344,25 @@ def login():
     # Если метод GET, просто возвращаем форму
     return render_template('login.html')
 
+@app.route('/clean', methods=['POST'])
+def clear_conversation():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Вы не авторизованы.", "error")
+        return redirect(url_for('index'))
+
+    try:
+        with closing(get_db_connection()) as connection:
+            with closing(connection.cursor()) as cursor:
+                cursor.execute("DELETE FROM messages WHERE user_id = %s", (user_id,))
+                connection.commit()
+        logging.info(f"✅ Удалены все сообщения пользователя {user_id} из базы.")
+        flash("Переписка успешно очищена.", "success")
+    except mysql.connector.Error as err:
+        logging.error(f"⚠ Ошибка при удалении сообщений: {err}")
+        flash("Ошибка при очистке переписки.", "error")
+
+    return redirect(url_for('index'))  # Или куда нужно
 
 @app.route('/logout')
 def logout():
