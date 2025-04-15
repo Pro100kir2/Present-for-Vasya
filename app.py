@@ -109,6 +109,7 @@ def get_custom_reply(question):
     normalized_question = re.sub(r'\W+', ' ', question.strip().lower())
     custom_replies = {
         "какой лучший язык программирования": "Конечно, тот, которым ты уже зарабатываешь!",
+        "какой лучший язык программирования?": "Конечно, тот, которым ты уже зарабатываешь!",
         "лучший язык программирования": "Конечно, тот, которым ты уже зарабатываешь!",
         "как стать программистом": "Начните с основ, практикуйтесь ежедневно и не бойтесь ошибок.",
         "что делать чтобы стать программистом": "Начните с основ, практикуйтесь ежедневно и не бойтесь ошибок.",
@@ -195,7 +196,7 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
     if not any(msg['role'] == 'system' for msg in conversation_history):
         conversation_history.insert(0, {
             "role": "system",
-            "content": "Ты очень весёлый, мудрый и заботливый..."
+            "content": "Ты очень весёлый, мудрый и заботливый. Любишь шутить и стебаться над пользователями "
         })
 
     custom_reply = get_custom_reply(user_message)
@@ -205,7 +206,7 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
     # Добавляем новое сообщение пользователя
     conversation_history.append({"role": "user", "content": user_message})
 
-    payload = json.dumps({"model": "GigaChat", "messages": conversation_history})
+    payload = json.dumps({"model": "GigaChat-2", "messages": conversation_history})
     headers = {"Authorization": f"Bearer {auth_token}", "Content-Type": "application/json"}
 
     attempt = 0
