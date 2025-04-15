@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Регистрация</title>
+  <link rel="icon" type="image/png" href="../static/vasia.png" />
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --text: #f5f5f5;
+      --button-bg: #10b981;
+      --button-hover-bg: #0f9f75;
+      --input-bg: #2a2a2a;
+      --border-color: #444;
+      --input-color: #fff;
+      --error-color: #f44336;
+      --font-family: 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .form-container {
+      background-color: #222;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      background-color: var(--input-bg);
+      color: var(--input-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--button-bg);
+    }
+
+    .error {
+      color: var(--error-color);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      background-color: var(--button-bg);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: var(--button-hover-bg);
+    }
+
+    .link {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .link a {
+      color: var(--button-bg);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Стили для иконки глаза */
+    .eye-icon {
+      position: absolute;
+      right: 10px;
+      top: 35%;
+      transform: translateY(-50%);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Регистрация</h2>
+    <div id="errorMessage" class="error"></div>
+    <form id="registerForm" method="POST">
+      <label for="name">Имя</label>
+      <input type="text" id="name" name="name" required placeholder="Введите ваше имя" />
+
+      <label for="email">Электронная почта</label>
+      <input type="email" id="email" name="email" required placeholder="Введите ваш email" />
+
+      <label for="password">Пароль</label>
+      <div style="position: relative;">
+        <input type="password" id="password" name="password" required placeholder="Введите ваш пароль" />
+        <span id="eye-icon" class="eye-icon" onclick="togglePassword()">👁️</span>
+      </div>
+
+      <label for="confirmPassword">Подтвердите пароль</label>
+      <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Подтвердите пароль" />
+
+      <button type="submit">Зарегистрироваться</button>
+    </form>
+
+    <div class="link">
+      Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a>
+    </div>
+  </div>
+
+  <script>
+
+    // Функция для переключения видимости пароля
+    function togglePassword() {
+      var passwordField = document.getElementById("password");
+      var eyeIcon = document.getElementById("eye-icon");
+
+      // Переключаем тип поля
+      var type = passwordField.type === "password" ? "text" : "password";
+      passwordField.type = type;
+
+      // Переключаем иконку глаза
+      eyeIcon.textContent = type === "password" ? "👁️" : "🙈";
+    }
+  </script>
+</body>
+</html>

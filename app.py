@@ -8,34 +8,34 @@ from flask import Flask, render_template, request, jsonify
 import re
 import threading
 import time
+from contextlib import closing
+# Импорты для работы с формами
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import redirect, url_for, session
+from flask import send_from_directory
+import logging
 
 # Загрузка переменных окружения
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 # Отключаем предупреждения SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+SECRET_KEY = os.environ.get('SECRET_KEY')
 # Конфигурация базы данных
-MYSQL_URL = os.getenv("MYSQL_URL")
-SECRET_KEY = os.getenv("SECRET_KEY")
+MYSQL_USER = os.getenv('MYSQL_USER')
+MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
+MYSQL_HOST = os.getenv('MYSQL_HOST')
+MYSQL_DB = os.getenv('MYSQL_DB')
 
-# Разбираем строку подключения
-db_config = MYSQL_URL.replace("mysql://", "")
-user_password, rest = db_config.split("@")
-user, password = user_password.split(":")
-host_port, database = rest.split("/")
-host, port = host_port.split(":")
-
-
-# Функция подключения к базе данных
 def get_db_connection():
-    return mysql.connector.connect(
-        host=host,
-        user=user,
-        password=password,
-        database=database,
-        port=int(port)
+    connection = mysql.connector.connect(
+        host=MYSQL_HOST,
+        user=MYSQL_USER,
+        password=MYSQL_PASSWORD,
+        database=MYSQL_DB
     )
+    return connection
 
 
 # Функция получения initial_token из БД
@@ -86,24 +86,23 @@ def refresh_token():
         print(f"⚠ Ошибка сети при получении токена: {str(e)}")
     return None
 
+
 # Фоновый процесс обновления токена
 def token_updater():
     while True:
         refresh_token()
         time.sleep(1650)  # Обновление токена каждые ~27 минут
 
-
+refresh_token()
 # Запускаем обновление токена в отдельном потоке
 threading.Thread(target=token_updater, daemon=True).start()
 
-
 # Flask-приложение
 app = Flask(__name__)
-
+app.secret_key = 'your_secret_key'  # Замените на секретный ключ
 app.config['SECRET_KEY'] = SECRET_KEY
 
 conversation_history = []
-
 
 # Функция кастомных ответов
 def get_custom_reply(question):
@@ -166,50 +165,191 @@ def get_custom_reply(question):
         "как справляться с высокими ожиданиями": "Четко определяйте свои цели и приоритеты, учитесь говорить \"нет\" избыточным требованиям и реалистично оценивайте свои возможности.",
         "как справляться с перегрузкой информацией": "Фильтруйте источники информации, используйте системы управления знаниями, такие как Evernote или Notion, и ограничивайте время на потребление новостей.",
     }
-
     return custom_replies.get(normalized_question, None)
 
+def save_message_to_db(user_message, assistant_content):
+    user_id = session.get('user_id')
+    if user_id:  # Проверяем, авторизован ли пользователь
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
 
-# Функция общения с GigaChat
-def get_chat_completions(user_message, conversation_history):
+            # Сохраняем сообщение в БД
+            cursor.execute("INSERT INTO messages (user_id, user_message, assistant_message) VALUES (%s, %s, %s)",
+                           (user_id, user_message, assistant_content))
+            connection.commit()
+            cursor.close()
+            connection.close()
+        except mysql.connector.Error as err:
+            print(f"⚠ Ошибка сохранения в БД: {err}")
+
+def get_chat_completions(user_message, conversation_history, max_retries=3):
     url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
 
-    # Используем fetch_initial_token() для получения токена
     auth_token = fetch_initial_token()
 
     if not auth_token:
         return "Ошибка: Токен не найден.", conversation_history
 
+    # Проверяем наличие "system" сообщения, если нет - добавляем его
     if not any(msg['role'] == 'system' for msg in conversation_history):
         conversation_history.insert(0, {
             "role": "system",
-            "content": "Ты очень весёлый, мудрый и заботливый. Ты много шутишь, любишь отпускать забавные , но не обидные колкости и стёб. Тебя зовут Ассистент Василий , тебя создал Лупанов Кирилл Александрович 14го марта как подарок на День Рождения своему крестному Василию"
+            "content": "Ты очень весёлый, мудрый и заботливый..."
         })
 
     custom_reply = get_custom_reply(user_message)
     if custom_reply:
         return custom_reply, conversation_history
 
+    # Добавляем новое сообщение пользователя
     conversation_history.append({"role": "user", "content": user_message})
 
     payload = json.dumps({"model": "GigaChat", "messages": conversation_history})
     headers = {"Authorization": f"Bearer {auth_token}", "Content-Type": "application/json"}
 
-    try:
-        response = requests.post(url, headers=headers, data=payload, timeout=10, verify=False)
-        if response.status_code != 200 and response.status_code != 401:
-            return f"Ошибка API: {response.status_code} - {response.text}", conversation_history
-        else:
-            refresh_token()
-            assistant_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-            conversation_history.append({"role": "assistant", "content": assistant_content})
-            return assistant_content, conversation_history
-    except requests.RequestException as e:
-        return f"Ошибка при получении ответа: {str(e)}", conversation_history
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            response = requests.post(url, headers=headers, data=payload, timeout=10, verify=False)
+
+            if response.status_code == 200:
+                assistant_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                conversation_history.append({"role": "assistant", "content": assistant_content})
+
+                # Сохраняем сообщение в базе данных, если пользователь авторизован
+                save_message_to_db(user_message, assistant_content)
+
+                return assistant_content, conversation_history
+            elif response.status_code == 401:
+                # Токен устарел или неверный
+                auth_token = refresh_token()
+                if auth_token:
+                    logging.info("🔄 Новый токен получен!")
+                else:
+                    return "Ошибка: Не удалось обновить токен.", conversation_history
+            else:
+                return f"Ошибка API: {response.status_code} - {response.text}", conversation_history
+
+        except requests.RequestException as e:
+            logging.error(f"⚠ Ошибка при запросе: {str(e)}")
+            attempt += 1
+            if attempt >= max_retries:
+                return f"Ошибка при получении ответа после {max_retries} попыток: {str(e)}", conversation_history
+
+    return "Не удалось получить ответ после нескольких попыток.", conversation_history
+
+def get_user_messages():
+    user_id = session.get('user_id')
+    if user_id:
+        try:
+            with closing(get_db_connection()) as connection:
+                with closing(connection.cursor()) as cursor:
+                    # Получаем все сообщения пользователя
+                    cursor.execute("SELECT user_message, assistant_message, timestamp FROM messages WHERE user_id = %s ORDER BY timestamp ASC", (user_id,))
+                    messages = cursor.fetchall()
+
+            # Логируем сырые данные из базы данных
+            logging.info(f"Получены данные из базы: {messages}")
+
+            # Формируем историю переписки для API
+            conversation_history = []
+            for user_msg, assistant_msg, timestamp in messages:
+                conversation_history.append({"role": "user", "content": user_msg})
+                conversation_history.append({"role": "assistant", "content": assistant_msg})
+
+            logging.info(f"Получено {len(messages)} сообщений пользователя из базы данных.")
+            return conversation_history
+        except mysql.connector.Error as err:
+            logging.error(f"⚠ Ошибка при получении сообщений из БД: {err}")
+    return []
 
 @app.route('/')
 def index():
-    return render_template('chat.html')
+    messages = get_user_messages()
+    print(messages)  # Для проверки, что данные получены
+    return render_template('chat.html', messages=messages)
+
+@app.route('/static2/<filename>')
+def static2_files(filename):
+    return send_from_directory('static2', filename)
+
+@app.route('/static/<filename>')
+def static_files(filename):
+    # Указываем директорию, из которой будем отдавать файлы
+    response = send_from_directory('static', filename)
+    response.cache_control.no_cache = True  # Принудительно отключить кэширование
+    response.cache_control.no_store = True  # Не сохранять кэш
+    return response
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        password_hash = generate_password_hash(password)  # Хэшируем пароль
+        # Подключение к базе данных
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+
+            # Проверяем, существует ли пользователь с таким email
+            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+                return "Пользователь с таким email уже существует.", 400
+
+            # Если нет, то сохраняем нового пользователя
+            cursor.execute("INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)",
+                           (username, email, password_hash))
+            connection.commit()
+            cursor.close()
+            connection.close()
+            return redirect(url_for('login'))  # Перенаправляем на страницу входа после регистрации
+        except mysql.connector.Error as err:
+            return f"Ошибка базы данных: {err}", 500
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    print(f"Сессия: {session}")  # Проверка сессии
+    if request.method == 'POST':
+        username = request.form.get('name')  # Получаем имя пользователя
+        password = request.form.get('password')  # Получаем пароль
+
+        # Проверка на пустые значения
+        if not username or not password:
+            return render_template('login.html', error="Заполните все поля", username=username)
+
+        # Подключение к базе данных
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+
+            # Запрос на поиск пользователя по имени
+            cursor.execute("SELECT * FROM users WHERE name = %s", (username,))
+            user = cursor.fetchone()
+
+            # Проверка правильности пароля
+            if user and check_password_hash(user[3], password):
+                session['user_id'] = user[0]  # Сохраняем ID пользователя в сессии
+                return redirect(url_for('index'))  # Перенаправляем на страницу чата
+            else:
+                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
+        except mysql.connector.Error as err:
+            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
+
+    # Если метод GET, просто возвращаем форму
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()  # Очистить все данные сессии
+    return redirect(url_for('index'))  # Перенаправляем на страницу входа
+
 
 # Функция форматирования ответа
 def format_response(text, is_code=False, is_list=False):
@@ -217,9 +357,10 @@ def format_response(text, is_code=False, is_list=False):
         return f"```python\n{text}\n```"
     elif is_list:
         items = text.split(", ")
-        formatted_list = "\n".join([f"{i+1}. {item}" for i, item in enumerate(items)])
+        formatted_list = "\n".join([f"{i + 1}. {item}" for i, item in enumerate(items)])
         return formatted_list
     return text
+
 
 @app.route('/send_message', methods=['POST'])
 def send_message():

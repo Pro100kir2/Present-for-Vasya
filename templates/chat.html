@@ -13,11 +13,16 @@
       --user-msg-bg: #0f766e;
       --assistant-msg-bg: #2d2d2d;
       --accent: #10b981;
+      --header-bg: #111;
+      --header-border-color: #333;
+      --button-bg: var(--accent);
+      --button-hover-bg: #0f9f75;
+      --button-cancel-bg: #fff;
+      --button-cancel-hover-bg: #eee;
+      --user-image-size: 40px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html, body {
       height: 100%;
@@ -31,12 +36,61 @@
 
     header {
       padding: 16px 24px;
-      background-color: #111;
-      border-bottom: 1px solid #333;
+      background-color: var(--header-bg);
+      border-bottom: 1px solid var(--header-border-color);
       font-size: 20px;
       font-weight: bold;
       color: var(--accent);
       text-align: center;
+      position: relative;
+    }
+
+    .user-info {
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .user-info img {
+      width: var(--user-image-size);
+      height: var(--user-image-size);
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .user-info .dropdown {
+      display: none;
+      position: absolute;
+      top: 40px;
+      right: 0;
+      background-color: var(--bg);
+      border: 1px solid #444;
+      border-radius: 8px;
+      width: 150px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .user-info:hover .dropdown {
+      display: block;
+    }
+
+    .dropdown a {
+      padding: 12px;
+      text-decoration: none;
+      color: var(--text);
+      display: block;
+      border-bottom: 1px solid #444;
+    }
+
+    .dropdown a:hover {
+      background-color: #333;
+    }
+
+    .dropdown a:last-child {
+      border-bottom: none;
     }
 
     .chat-container {
@@ -67,17 +121,11 @@
       line-height: 1.5;
       word-break: break-word;
       display: inline-block;
+      position: relative;
     }
 
-    .user-wrapper {
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .assistant-wrapper {
-      display: flex;
-      justify-content: flex-start;
-    }
+    .user-wrapper { display: flex; justify-content: flex-end; }
+    .assistant-wrapper { display: flex; justify-content: flex-start; }
 
     .user {
       background-color: var(--user-msg-bg);
@@ -116,7 +164,7 @@
     }
 
     button {
-      background-color: var(--accent);
+      background-color: var(--button-bg);
       color: #fff;
       border: none;
       padding: 12px 20px;
@@ -136,7 +184,16 @@
     }
 
     button:hover:not(:disabled) {
-      background-color: #0f9f75;
+      background-color: var(--button-hover-bg);
+    }
+
+    button.cancel {
+      background-color: var(--button-cancel-bg);
+      color: #f44336;
+    }
+
+    button.cancel:hover {
+      background-color: var(--button-cancel-hover-bg);
     }
 
     .messages::-webkit-scrollbar {
@@ -148,47 +205,72 @@
       border-radius: 3px;
     }
 
-    button.cancel {
-      background-color: #f44336;
-    }
-
-    button.cancel:hover {
-      background-color: #d32f2f;
-    }
-
-    pre {
-      background: #1a1a1a;
-      padding: 10px;
-      border-radius: 8px;
-      overflow-x: auto;
-    }
-
     .copy-button {
-      background-color: #444;
-      color: white;
+      position: absolute;
+      bottom: 6px;
+      height: 10px;
+      left: 8px;
+      background-color: transparent;
       border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 14px;
+      color: #aaa;
+      font-size: 18px;
       cursor: pointer;
-      margin-left: 8px;
     }
 
     .copy-button:hover {
-      background-color: #333;
+      color: var(--accent);
     }
 
-    .copy-button:disabled {
-      background-color: #555;
-      cursor: not-allowed;
+    .timestamp {
+      font-size: 12px;
+      color: #888;
+      margin-top: 6px;
+      display: block;
+      text-align: right;
     }
   </style>
 </head>
 <body>
-  <header>Чат с Василием</header>
+  <header>
+    Чат с Василием
+    <div class="user-info">
+      <!-- Если пользователь вошел, показываем ссылки для настроек и выхода -->
+      {% if 'user_id' in session %}
+          <img id="userImage1" src="../static/fabula-ai-autorigistr.png" alt="User Avatar" />
+          <div class="dropdown">
+              <a href="/setting" id="settingsLink">Setting</a>
+              <a href="/pay" id="upgradeLink">Upload plan</a>
+              <a href="/logout" id="logoutLink">Logout</a>
+          </div>
+      {% else %}
+          <!-- Если пользователь не вошел, показываем ссылки для входа и регистрации -->
+          <img id="userImage2" src="../static2/default-avatar.png" alt="User Avatar" />
+          <div class="dropdown">
+              <a href="/login" id="loginLink">Login</a>
+              <a href="/register" id="registerLink">Add new</a>
+      {% endif %}
+    </div>
+  </header>
 
-  <div class="chat-container">
-    <div class="messages" id="chat"></div>
+<div class="chat-container">
+  <div class="messages" id="chat">
+    {% for message in messages %}
+      {% if message.role == 'user' %}
+        <div class="user-wrapper">
+          <div class="message user" data-timestamp="{{ message.timestamp }}">
+            {{ message.content }}
+          </div>
+        </div>
+      {% elif message.role == 'assistant' %}
+        <div class="message assistant" data-timestamp="{{ message.timestamp }}">
+          {{ message.content }}
+          <button class="copy-button">⧉</button>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
     <div class="input-area">
       <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
       <button id="sendButton" onclick="sendMessage()" disabled>→</button>
@@ -196,18 +278,69 @@
   </div>
 
   <script>
-    let isBotTyping = false;
-    let typingTimeout;
-    let botMessageDiv;
-    let welcomeMessageDiv = null; // Переменная для хранения приветственного сообщения
-
-    // Добавляем приветственное сообщение, если чат пуст
     window.onload = function() {
       const chatBox = document.getElementById('chat');
       if (chatBox.children.length === 0) {
-        welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться. Вот что я умею:\n" +
-          "Рассказывать анекдоты,  \n писать код,  \n выслушать если муж не заметил новый маникюр,  \n написать стих для той самой и многое другое!");
+        welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
       }
+
+      fetch('/get_messages')
+        .then(response => response.json())
+        .then(data => {
+          if (data.messages) {
+            data.messages.forEach(message => {
+              appendMessage(message.content, message.sender);
+            });
+          }
+        })
+        .catch(err => {
+          console.error("Ошибка при загрузке сообщений:", err);
+        });
+    };
+
+    let isBotTyping = false;
+    let typingTimeout;
+    let botMessageDiv;
+    let welcomeMessageDiv = null;
+
+    window.onload = function() {
+      const chatBox = document.getElementById('chat');
+      if (chatBox.children.length === 0) {
+        welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
+      }
+
+      const userImage = document.getElementById('userImage');
+      const userInfo = document.querySelector('.user-info');
+      const dropdown = document.querySelector('.dropdown');
+      const loginLink = document.getElementById('loginLink');
+      const registerLink = document.getElementById('registerLink');
+      const settingsLink = document.getElementById('settingsLink');
+      const upgradeLink = document.getElementById('upgradeLink');
+      const logoutLink = document.getElementById('logoutLink');
+
+      // Проверка авторизации пользователя
+      const isLoggedIn = false; // Это временное значение, его надо заменить на реальную логику авторизации
+
+      if (isLoggedIn) {
+        userImage.src = "../static/fabula-ai-autorigistr.png"; // Зарегистрированный пользователь
+        loginLink.style.display = "none";
+        registerLink.style.display = "none";
+        settingsLink.style.display = "block";
+        upgradeLink.style.display = "block";
+        logoutLink.style.display = "block";
+      } else {
+        userImage.src = "../static/default-avatar.png"; // Неавторизованный пользователь
+        loginLink.style.display = "block";
+        registerLink.style.display = "block";
+        settingsLink.style.display = "none";
+        upgradeLink.style.display = "none";
+        logoutLink.style.display = "none";
+      }
+
+      // Обработчик для переключения меню
+      userInfo.addEventListener('click', function() {
+        dropdown.classList.toggle('show');
+      });
     };
 
     function toggleButton() {
@@ -224,21 +357,20 @@
         btn.classList.remove("cancel");
       }
 
-      // Добавляем обработчик для кнопки "Отменить"
       btn.onclick = function() {
         if (isBotTyping) {
-          stopTyping(); // Останавливаем печать
+          stopTyping();
         } else {
-          sendMessage(); // Отправляем сообщение
+          sendMessage();
         }
       };
     }
 
     function stopTyping() {
-      clearTimeout(typingTimeout);  // Прерываем таймер печати
-      isBotTyping = false;  // Устанавливаем флаг, что бот не печатает
-      toggleButton();  // Обновляем кнопку (переводим обратно на "Отправить")
-      botMessageDiv.textContent = '';  // Очищаем текст бота (если это нужно)
+      clearTimeout(typingTimeout);
+      isBotTyping = false;
+      toggleButton();
+      botMessageDiv.textContent = '';
     }
 
     function autoResize() {
@@ -247,6 +379,35 @@
       input.style.height = (input.scrollHeight) + "px";
     }
 
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const seconds = Math.floor(diffMs / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      if (seconds < 60) return 'только что';
+      if (minutes === 1) return '1 минуту назад';
+      if (minutes < 60) return `${minutes} минут назад`;
+      if (hours === 1) return '1 час назад';
+      if (hours < 24) return `${hours} часов назад`;
+      if (days === 1) return '1 день назад';
+      return `${days} дней назад`;
+    }
+
+    function updateAllTimestamps() {
+      document.querySelectorAll('.message').forEach(msg => {
+        const span = msg.querySelector('.timestamp');
+        const iso = msg.dataset.timestamp;
+        if (span && iso) {
+          span.textContent = getTimeAgo(new Date(iso));
+        }
+      });
+    }
+
+    setInterval(updateAllTimestamps, 30000);
+
     function appendMessage(content, sender) {
       const chatBox = document.getElementById('chat');
       const wrapper = document.createElement('div');
@@ -254,42 +415,51 @@
 
       const div = document.createElement('div');
       div.className = `message ${sender}`;
+      const sentAt = new Date();
+      div.dataset.timestamp = sentAt.toISOString();
 
       if (sender === 'assistant') {
-        div.innerHTML = content; // Преобразуем сообщение в Markdown (если нужно)
+        div.innerHTML = content;
       } else {
         div.textContent = content;
       }
 
+      const timestamp = document.createElement('span');
+      timestamp.className = 'timestamp';
+      timestamp.textContent = getTimeAgo(sentAt);
+      div.appendChild(timestamp);
+
       if (sender === 'assistant') {
-        // Добавляем кнопку "Копировать" только для ответов Василия
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-button';
-        copyButton.textContent = 'Скопировать';
-        copyButton.onclick = function() {
-          navigator.clipboard.writeText(content).then(function() {
-            alert('Сообщение скопировано!');
+        copyButton.innerHTML = '📋';
+        copyButton.title = 'Copy';
+        copyButton.onclick = function () {
+          navigator.clipboard.writeText(content).then(() => {
+            copyButton.innerHTML = '✅';
+            copyButton.disabled = true;
           });
         };
-
-        wrapper.appendChild(div);
-        wrapper.appendChild(copyButton);
-      } else {
-        wrapper.appendChild(div);
+        div.appendChild(copyButton);
       }
+
+      wrapper.appendChild(div);
       chatBox.appendChild(wrapper);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function simulateBotTyping(content) {
       isBotTyping = true;
-      toggleButton(); // обновляем кнопку
+      toggleButton();
+
       const chatBox = document.getElementById('chat');
       const wrapper = document.createElement('div');
       wrapper.className = 'assistant-wrapper';
       botMessageDiv = document.createElement('div');
       botMessageDiv.className = 'message assistant';
       botMessageDiv.textContent = '';
+      const sentAt = new Date();
+      botMessageDiv.dataset.timestamp = sentAt.toISOString();
 
       wrapper.appendChild(botMessageDiv);
       chatBox.appendChild(wrapper);
@@ -304,13 +474,30 @@
           typingTimeout = setTimeout(typeMessage, 30);
         } else {
           isBotTyping = false;
-          toggleButton(); // обновляем кнопку
+          toggleButton();
           botMessageDiv.innerHTML = content;
+
+          const timestamp = document.createElement('span');
+          timestamp.className = 'timestamp';
+          timestamp.textContent = getTimeAgo(sentAt);
+          botMessageDiv.appendChild(timestamp);
+
+          const copyButton = document.createElement('button');
+          copyButton.className = 'copy-button';
+          copyButton.innerHTML = '📋';
+          copyButton.title = 'Copy';
+          copyButton.onclick = function () {
+            navigator.clipboard.writeText(content).then(() => {
+              copyButton.innerHTML = '✅';
+              copyButton.disabled = true;
+            });
+          };
+          botMessageDiv.appendChild(copyButton);
         }
       }
 
-      typeMessage();
-      return wrapper; // Возвращаем обертку для дальнейшего удаления
+      setTimeout(typeMessage, 30);
+      return wrapper;
     }
 
     function sendMessage() {
@@ -323,11 +510,10 @@
       autoResize();
       toggleButton();
 
-      // Удаляем приветственное сообщение, если оно было
       const chatBox = document.getElementById('chat');
       if (welcomeMessageDiv) {
         chatBox.removeChild(welcomeMessageDiv);
-        welcomeMessageDiv = null; // Обнуляем переменную
+        welcomeMessageDiv = null;
       }
 
       if (isBotTyping) stopTyping();
@@ -337,18 +523,18 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message })
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data.response) {
-            simulateBotTyping(data.response);
-          } else {
-            simulateBotTyping("Произошла ошибка, Василий молчит.");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
-        });
+      .then(res => res.json())
+      .then(data => {
+        if (data.response) {
+          simulateBotTyping(data.response);
+        } else {
+          simulateBotTyping("Произошла ошибка, Василий молчит.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
+      });
     }
   </script>
 </body>
