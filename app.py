@@ -1,32 +1,28 @@
-import os
-import json
-import requests
-import urllib3
-import mysql.connector
-from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, flash
-import re
-import threading
-import time
-from contextlib import closing
-# Импорты для работы с формами
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import redirect, url_for, session
-from flask import send_from_directory
+from contextlib import closing
+from dotenv import load_dotenv
+import mysql.connector
+import threading
+import requests
 import logging
+import urllib3
+import json
+import time
+import os
+import re
 
-# Загрузка переменных окружения
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-# Отключаем предупреждения SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 SECRET_KEY = os.environ.get('SECRET_KEY')
-# Конфигурация базы данных
+
 MYSQL_USER = os.getenv('MYSQL_USER')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
 MYSQL_HOST = os.getenv('MYSQL_HOST')
 MYSQL_DB = os.getenv('MYSQL_DB')
+
 
 def get_db_connection():
     connection = mysql.connector.connect(
@@ -38,7 +34,6 @@ def get_db_connection():
     return connection
 
 
-# Функция получения initial_token из БД
 def fetch_initial_token():
     try:
         connection = get_db_connection()
@@ -58,7 +53,6 @@ def fetch_initial_token():
         return None
 
 
-# Функция обновления initial_token
 def refresh_token():
     url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     payload = {'scope': 'GIGACHAT_API_PERS'}
@@ -87,27 +81,34 @@ def refresh_token():
     return None
 
 
-# Фоновый процесс обновления токена
 def token_updater():
     while True:
         refresh_token()
-        time.sleep(1650)  # Обновление токена каждые ~27 минут
+        time.sleep(1650)
+
 
 refresh_token()
-# Запускаем обновление токена в отдельном потоке
+
 threading.Thread(target=token_updater, daemon=True).start()
 
-# Flask-приложение
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Замените на секретный ключ
+app.secret_key = 'your_secret_key'
 app.config['SECRET_KEY'] = SECRET_KEY
 
 conversation_history = []
 
-# Функция кастомных ответов
+
 def get_custom_reply(question):
     normalized_question = re.sub(r'\W+', ' ', question.strip().lower())
     custom_replies = {
+        "как меня зовут": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "Как меня зовут": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "как меня зовут?": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "как меня звать": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "Как меня зовут?": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "Как меня звать": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "как меня звать?": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
+        "Как меня звать?": "Что-то мне подсказывает что твоё имя то - которым тебя назвали родители",
         "какой лучший язык программирования": "Конечно, тот, которым ты уже зарабатываешь!",
         "какой лучший язык программирования?": "Конечно, тот, которым ты уже зарабатываешь!",
         "лучший язык программирования": "Конечно, тот, которым ты уже зарабатываешь!",
@@ -168,14 +169,14 @@ def get_custom_reply(question):
     }
     return custom_replies.get(normalized_question, None)
 
+
 def save_message_to_db(user_message, assistant_content):
     user_id = session.get('user_id')
-    if user_id:  # Проверяем, авторизован ли пользователь
+    if user_id:
         try:
             connection = get_db_connection()
             cursor = connection.cursor()
 
-            # Сохраняем сообщение в БД
             cursor.execute("INSERT INTO messages (user_id, user_message, assistant_message) VALUES (%s, %s, %s)",
                            (user_id, user_message, assistant_content))
             connection.commit()
@@ -183,6 +184,7 @@ def save_message_to_db(user_message, assistant_content):
             connection.close()
         except mysql.connector.Error as err:
             print(f"⚠ Ошибка сохранения в БД: {err}")
+
 
 def get_chat_completions(user_message, conversation_history, max_retries=3):
     url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
@@ -192,18 +194,16 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
     if not auth_token:
         return "Ошибка: Токен не найден.", conversation_history
 
-    # Проверяем наличие "system" сообщения, если нет - добавляем его
     if not any(msg['role'] == 'system' for msg in conversation_history):
         conversation_history.insert(0, {
             "role": "system",
-            "content": "Ты очень весёлый, мудрый и заботливый. Любишь шутить и стебаться над пользователями "
+            "content": "Ты очень мудрый и спокойный. Твой стиль общения - отетить за вопрос и сказать как бы поступил ты. Тебя зовут ассистент Василий и тебя создал Лупанов Кирилл Александрович "
         })
 
     custom_reply = get_custom_reply(user_message)
     if custom_reply:
         return custom_reply, conversation_history
 
-    # Добавляем новое сообщение пользователя
     conversation_history.append({"role": "user", "content": user_message})
 
     payload = json.dumps({"model": "GigaChat-2", "messages": conversation_history})
@@ -217,13 +217,10 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
             if response.status_code == 200:
                 assistant_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 conversation_history.append({"role": "assistant", "content": assistant_content})
-
-                # Сохраняем сообщение в базе данных, если пользователь авторизован
                 save_message_to_db(user_message, assistant_content)
-
                 return assistant_content, conversation_history
             elif response.status_code == 401:
-                # Токен устарел или неверный
+
                 auth_token = refresh_token()
                 if auth_token:
                     logging.info("🔄 Новый токен получен!")
@@ -240,20 +237,20 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
 
     return "Не удалось получить ответ после нескольких попыток.", conversation_history
 
+
 def get_user_messages():
     user_id = session.get('user_id')
     if user_id:
         try:
             with closing(get_db_connection()) as connection:
                 with closing(connection.cursor()) as cursor:
-                    # Получаем все сообщения пользователя
-                    cursor.execute("SELECT user_message, assistant_message, timestamp FROM messages WHERE user_id = %s ORDER BY timestamp ASC", (user_id,))
+                    cursor.execute(
+                        "SELECT user_message, assistant_message, timestamp FROM messages WHERE user_id = %s ORDER BY timestamp ASC",
+                        (user_id,))
                     messages = cursor.fetchall()
 
-            # Логируем сырые данные из базы данных
             logging.info(f"Получены данные из базы: {messages}")
 
-            # Формируем историю переписки для API
             conversation_history = []
             for user_msg, assistant_msg, timestamp in messages:
                 conversation_history.append({"role": "user", "content": user_msg})
@@ -265,23 +262,26 @@ def get_user_messages():
             logging.error(f"⚠ Ошибка при получении сообщений из БД: {err}")
     return []
 
+
 @app.route('/')
 def index():
     messages = get_user_messages()
-    print(messages)  # Для проверки, что данные получены
+    print(messages)
     return render_template('chat.html', messages=messages)
+
 
 @app.route('/static2/<filename>')
 def static2_files(filename):
     return send_from_directory('static2', filename)
 
+
 @app.route('/static/<filename>')
 def static_files(filename):
-    # Указываем директорию, из которой будем отдавать файлы
     response = send_from_directory('static', filename)
-    response.cache_control.no_cache = True  # Принудительно отключить кэширование
-    response.cache_control.no_store = True  # Не сохранять кэш
+    response.cache_control.no_cache = True
+    response.cache_control.no_store = True
     return response
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -289,61 +289,56 @@ def register():
         username = request.form['name']
         email = request.form['email']
         password = request.form['password']
-        password_hash = generate_password_hash(password)  # Хэшируем пароль
-        # Подключение к базе данных
+        password_hash = generate_password_hash(password)
+
         try:
             connection = get_db_connection()
             cursor = connection.cursor()
 
-            # Проверяем, существует ли пользователь с таким email
             cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
             existing_user = cursor.fetchone()
 
             if existing_user:
                 return "Пользователь с таким email уже существует.", 400
 
-            # Если нет, то сохраняем нового пользователя
             cursor.execute("INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)",
                            (username, email, password_hash))
             connection.commit()
             cursor.close()
             connection.close()
-            return redirect(url_for('login'))  # Перенаправляем на страницу входа после регистрации
+            return redirect(url_for('login'))
         except mysql.connector.Error as err:
             return f"Ошибка базы данных: {err}", 500
     return render_template('register.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print(f"Сессия: {session}")  # Проверка сессии
+    print(f"Сессия: {session}")
     if request.method == 'POST':
-        username = request.form.get('name')  # Получаем имя пользователя
-        password = request.form.get('password')  # Получаем пароль
+        username = request.form.get('name')
+        password = request.form.get('password')
 
-        # Проверка на пустые значения
         if not username or not password:
             return render_template('login.html', error="Заполните все поля", username=username)
 
-        # Подключение к базе данных
         try:
             connection = get_db_connection()
             cursor = connection.cursor()
 
-            # Запрос на поиск пользователя по имени
             cursor.execute("SELECT * FROM users WHERE name = %s", (username,))
             user = cursor.fetchone()
 
-            # Проверка правильности пароля
             if user and check_password_hash(user[3], password):
-                session['user_id'] = user[0]  # Сохраняем ID пользователя в сессии
-                return redirect(url_for('index'))  # Перенаправляем на страницу чата
+                session['user_id'] = user[0]
+                return redirect(url_for('index'))
             else:
                 return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
         except mysql.connector.Error as err:
             return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
 
-    # Если метод GET, просто возвращаем форму
     return render_template('login.html')
+
 
 @app.route('/clean', methods=['POST'])
 def clear_conversation():
@@ -363,15 +358,58 @@ def clear_conversation():
         logging.error(f"⚠ Ошибка при удалении сообщений: {err}")
         flash("Ошибка при очистке переписки.", "error")
 
-    return redirect(url_for('index'))  # Или куда нужно
+    return redirect(url_for('index'))
+
+
+@app.route('/setting', methods=['GET', 'POST'])
+def setting():
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return redirect(url_for('login'))
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT name, email FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return "Пользователь не найден.", 404
+
+        if request.method == 'POST':
+
+            new_name = request.form['name']
+            new_email = request.form['email']
+            new_password = request.form['password']
+            password_hash = None
+
+            if new_password:
+                password_hash = generate_password_hash(new_password)
+
+            if password_hash:
+                cursor.execute("UPDATE users SET name = %s, email = %s, password_hash = %s WHERE id = %s",
+                               (new_name, new_email, password_hash, user_id))
+            else:
+                cursor.execute("UPDATE users SET name = %s, email = %s WHERE id = %s",
+                               (new_name, new_email, user_id))
+
+            connection.commit()
+            cursor.close()
+            connection.close()
+            return redirect(url_for('index'))
+
+        return render_template('setting.html', user=user)
+
+    except mysql.connector.Error as err:
+        return f"Ошибка базы данных: {err}", 500
 
 @app.route('/logout')
 def logout():
-    session.clear()  # Очистить все данные сессии
-    return redirect(url_for('index'))  # Перенаправляем на страницу входа
+    session.clear()
+    return redirect(url_for('index'))
 
-
-# Функция форматирования ответа
 def format_response(text, is_code=False, is_list=False):
     if is_code:
         return f"```python\n{text}\n```"
@@ -381,7 +419,6 @@ def format_response(text, is_code=False, is_list=False):
         return formatted_list
     return text
 
-
 @app.route('/send_message', methods=['POST'])
 def send_message():
     global conversation_history
@@ -390,7 +427,6 @@ def send_message():
         return jsonify({"error": "Пустой запрос"}), 400
     response, conversation_history = get_chat_completions(user_message, conversation_history)
     return jsonify({"response": response})
-
 
 if __name__ == '__main__':
     refresh_token()
