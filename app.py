@@ -428,6 +428,10 @@ def send_message():
     response, conversation_history = get_chat_completions(user_message, conversation_history)
     return jsonify({"response": response})
 
+@app.route('/yandex_dffe98de3ad223d3.html', methods=["GET"])
+def yandex_dffe98de3ad223d3():
+    return render_template('yandex_dffe98de3ad223d3.html')
+
 if __name__ == '__main__':
     refresh_token()
     app.run(debug=True, port=8000)
