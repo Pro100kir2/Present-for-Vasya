@@ -431,9 +431,11 @@ def send_message():
 @app.route('/yandex_dffe98de3ad223d3.html', methods=["GET"])
 def yandex_dffe98de3ad223d3():
     return render_template('yandex_dffe98de3ad223d3.html')
-@app.route('/sitemap.xml', methods=['GET'])
+
+@app.route('yandex_7ccb75db4a3aa19c.html', methods=['GET'])
 def sitemap():
-    return render_template('sitemap.xml')
+    return render_template('yandex_7ccb75db4a3aa19c.html')
+
 if __name__ == '__main__':
     refresh_token()
     app.run(debug=True, port=8000)
