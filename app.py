@@ -436,6 +436,10 @@ def yandex_dffe98de3ad223d3():
 def sitemap():
     return render_template('yandex_7ccb75db4a3aa19c.html')
 
+@app.route('/sitemap.xml', methods=['GET'])
+def sitemap():
+    return render_template('/sitemap.xml')
+
 if __name__ == '__main__':
     refresh_token()
     app.run(debug=True, port=8000)
