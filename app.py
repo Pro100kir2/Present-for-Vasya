@@ -436,6 +436,10 @@ def yandex_dffe98de3ad223d3():
 def sitemap():
     return render_template('/sitemap.xml')
 
+@app.route('/vasia.png', methods=['GET'])
+def vasia():
+    return render_template('/vasia.png')
+
 if __name__ == '__main__':
     refresh_token()
     app.run(debug=True, port=8000)
