@@ -432,10 +432,6 @@ def send_message():
 def yandex_dffe98de3ad223d3():
     return render_template('yandex_dffe98de3ad223d3.html')
 
-@app.route('/yandex_7ccb75db4a3aa19c.html', methods=['GET'])
-def yandex_7ccb75db4a3aa19c():
-    return render_template('yandex_7ccb75db4a3aa19c.html')
-
 @app.route('/sitemap.xml', methods=['GET'])
 def sitemap():
     return render_template('/sitemap.xml')
