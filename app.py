@@ -440,6 +440,10 @@ def sitemap():
 def vasia():
     return send_from_directory('static', "favicon.ico")
 
+@app.route('/robots.txt', methods=['GET'])
+def robots():
+    return send_from_directory('static', "static/robots.txt")
+
 if __name__ == '__main__':
     refresh_token()
     app.run(debug=True, port=8000)
