@@ -436,7 +436,7 @@ def yandex_dffe98de3ad223d3():
 def sitemap():
     return render_template('/sitemap.xml')
 
-@app.route('/vasia.png', methods=['GET'])
+@app.route('/favicon.ico', methods=['GET'])
 def vasia():
     return send_from_directory('static', "favicon.ico")
 
