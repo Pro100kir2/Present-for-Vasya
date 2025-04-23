@@ -438,7 +438,7 @@ def sitemap():
 
 @app.route('/vasia.png', methods=['GET'])
 def vasia():
-    return send_from_directory('static', 'vasia.png')
+    return send_from_directory('static', "favicon.ico")
 
 if __name__ == '__main__':
     refresh_token()
