@@ -99,7 +99,7 @@ app.config['SECRET_KEY'] = SECRET_KEY
 
 # Создаём экземпляр API при старте
 fusionbrain = FusionBrainAPI()
-
+generation_tasks = {}  # Словарь для хранения статусов
 conversation_history = []
 
 
@@ -440,46 +440,58 @@ def image_chat():
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
     """
-    Маршрут для генерации изображения через FusionBrain API.
-    Ожидает JSON с полями message (команда пользователя) + параметрами генерации.
+    Маршрут для запуска генерации изображения через FusionBrain API.
+    Отвечает сразу UUID задачи.
     """
     data = request.get_json()
 
     if not data:
         return jsonify({'error': 'Пустой запрос.'}), 400
 
-    # Запрашиваем детали генерации
     prompt = data.get('prompt')
     width = data.get('width', 1024)
     height = data.get('height', 1024)
     style = data.get('style')
     negative_prompt = data.get('negative_prompt')
-    num_images = 1  # всегда одно изображение
 
     if not prompt:
         return jsonify({'error': 'Поле prompt обязательно для генерации.'}), 400
 
     try:
-        # Генерация изображения через FusionBrain
+        # Только запускаем задачу
         uuid = fusionbrain.generate_image(
             prompt=prompt,
             width=width,
             height=height,
-            num_images=num_images,
+            num_images=1,
             style=style,
             negative_prompt=negative_prompt
         )
 
-        # Проверка статуса генерации
+        # Сразу возвращаем UUID, без ожидания генерации
+        return jsonify({'uuid': uuid})
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при запуске генерации: {str(e)}'}), 500
+
+@app.route('/check-status', methods=['GET'])
+def check_status():
+    """
+    Проверка статуса готовности изображения по UUID.
+    """
+    uuid = request.args.get('uuid')
+
+    if not uuid:
+        return jsonify({'error': 'UUID обязателен для проверки статуса.'}), 400
+
+    try:
         files = fusionbrain.check_status(uuid)
 
         if files:
-            return jsonify({'images': files})
+            return jsonify({'ready': True, 'images': files})
         else:
-            return jsonify({'error': 'Не удалось сгенерировать изображение или истекло время ожидания.'}), 500
-
+            return jsonify({'ready': False})
     except Exception as e:
-        return jsonify({'error': f'Ошибка при генерации изображения: {str(e)}'}), 500
+        return jsonify({'error': f'Ошибка при проверке статуса: {str(e)}'}), 500
 
 @app.route('/yandex_dffe98de3ad223d3.html', methods=["GET"])
 def yandex_dffe98de3ad223d3():

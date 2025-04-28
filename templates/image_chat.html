@@ -146,64 +146,89 @@
   });
 
   document.getElementById("imageForm").addEventListener("submit", function(event) {
-    event.preventDefault();
+  event.preventDefault();
 
-    const prompt = document.getElementById("prompt").value.trim();
-    const style = document.getElementById("styleSelector").value;
-    const width = parseInt(document.getElementById("width").value);
-    const height = parseInt(document.getElementById("height").value);
-    const negativePrompt = document.getElementById("negativePrompt").value.trim();
+  const prompt = document.getElementById("prompt").value.trim();
+  const style = document.getElementById("styleSelector").value;
+  const width = parseInt(document.getElementById("width").value);
+  const height = parseInt(document.getElementById("height").value);
+  const negativePrompt = document.getElementById("negativePrompt").value.trim();
 
-    if (!prompt) {
-      alert("Пожалуйста, введите описание изображения.");
-      return;
-    }
+  if (!prompt) {
+    alert("Пожалуйста, введите описание изображения.");
+    return;
+  }
 
-    const payload = {
-      prompt: prompt,
-      width: width,
-      height: height,
-      style: style,
-      negative_prompt: negativePrompt
-    };
+  const payload = {
+    prompt: prompt,
+    width: width,
+    height: height,
+    style: style,
+    negative_prompt: negativePrompt
+  };
 
-    // Показываем сообщение о загрузке
-    document.getElementById("loadingMessage").style.display = "block";
-    document.getElementById("successMessage").style.display = "none"; // скрываем сообщение о готовности, если оно показывалось раньше
+  const loadingMessage = document.getElementById("loadingMessage");
+  const successMessage = document.getElementById("successMessage");
 
-    fetch('/generate-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    .then(response => response.json())
-    .then(data => {
-      const base64Image = data.images[0]; // бери base64 строку
-      const img = document.createElement('img');
-      img.src = `data:image/jpeg;base64,${base64Image}`; // создать правильный src
+  loadingMessage.innerText = "Изображение генерируется. Пожалуйста, подождите 10 секунд...";
+  loadingMessage.style.display = "block";
+  successMessage.style.display = "none";
 
-      // Добавление изображения в контейнер на вкладке "Ready Images"
-      const imagesContainer = document.getElementById("imagesContainer");
-      const imgElement = document.createElement("img");
-      imgElement.src = img.src;
-      imgElement.style.maxWidth = "300px";
-      imagesContainer.appendChild(imgElement);
+  // Промежуточные сообщения
+  const stillGeneratingTimeout = setTimeout(() => {
+    loadingMessage.innerText = "Всё ещё генерируется... Пожалуйста, подождите ещё немного.";
+  }, 8000);
 
-      // Скрываем сообщение о загрузке
-      document.getElementById("loadingMessage").style.display = "none";
-      // Показываем сообщение о готовности
-      document.getElementById("successMessage").style.display = "block";
+  const almostReadyTimeout = setTimeout(() => {
+    loadingMessage.innerText = "Почти готово! Совсем чуть-чуть...";
+  }, 16000);
 
-      // Скрываем сообщение о готовности через 5 секунд
-      setTimeout(function() {
-        document.getElementById("successMessage").style.display = "none";
-      }, 5000);
-    })
-    .catch(err => {
-      console.error("Ошибка запроса:", err);
-      document.getElementById("loadingMessage").style.display = "none"; // скрыть сообщение об ошибке
-    });
+  fetch('/generate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(response => response.json())
+  .then(data => {
+    const uuid = data.uuid;
+
+    const checkInterval = setInterval(() => {
+      fetch(`/check-status?uuid=${uuid}`)
+        .then(res => res.json())
+        .then(statusData => {
+          if (statusData.ready) {
+            clearInterval(checkInterval);
+            clearTimeout(stillGeneratingTimeout);
+            clearTimeout(almostReadyTimeout);
+
+            const base64Image = statusData.images[0];
+            const img = document.createElement('img');
+            img.src = `data:image/jpeg;base64,${base64Image}`;
+
+            const imagesContainer = document.getElementById("imagesContainer");
+            const imgElement = document.createElement("img");
+            imgElement.src = img.src;
+            imgElement.style.maxWidth = "300px";
+            imagesContainer.appendChild(imgElement);
+
+            loadingMessage.style.display = "none";
+            successMessage.style.display = "block";
+
+            setTimeout(() => {
+              successMessage.style.display = "none";
+            }, 5000);
+          }
+        });
+    }, 5000); // Проверять каждые 5 секунд
+  })
+  .catch(err => {
+    clearTimeout(stillGeneratingTimeout);
+    clearTimeout(almostReadyTimeout);
+
+    console.error("Ошибка запроса:", err);
+    loadingMessage.style.display = "none";
   });
+});
 
   function showTab(tabName) {
     const tabs = document.querySelectorAll('.tab-content');
