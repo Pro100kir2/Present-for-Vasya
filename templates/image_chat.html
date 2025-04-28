@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Генерация изображения</title>
+  <link rel="icon" href="../static2/favicon.ico" type="image/x-icon" />
+  <link rel="icon" type="image/x-icon" href="https://www.v-isa.ru/favicon.ico" />
+  <style>
+    body {
+      background: #1e1e1e;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h3 { color: #10b981; }
+    label { display: block; margin-top: 10px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #10b981;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0f9f75;
+    }
+    img { margin-top: 10px; max-width: 300px; }
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      background-color: #333;
+      padding: 10px 0;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      color: #fff;
+      background-color: #444;
+      border: none;
+      border-radius: 5px;
+    }
+    .tab:hover {
+      background-color: #555;
+    }
+    .active-tab {
+      background-color: #10b981;
+    }
+    .tab-content {
+      display: none;
+    }
+    .active-content {
+      display: block;
+    }
+    .loading-message, .success-message {
+      margin-top: 20px;
+      font-size: 16px;
+      display: none;
+    }
+    .loading-message {
+      color: #f5a623;
+    }
+    .success-message {
+      color: #10b981;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="tabs">
+    <button class="tab active-tab" onclick="showTab('generate')">Создать изображение </button>
+    <button class="tab" onclick="showTab('readyImages')">Готовые изображения !</button>
+  </div>
+
+  <!-- Generate Tab -->
+  <div id="generate" class="tab-content active-content">
+    <form id="imageForm">
+      <h3>Выберите стиль изображения</h3>
+      <select id="styleSelector" name="style">
+        <option value="DEFAULT">Свой стиль</option>
+        <option value="KANDINSKY">Кандинский</option>
+        <option value="UHD">Детальное фото</option>
+        <option value="ANIME">Аниме</option>
+      </select>
+      <img id="stylePreview" src="https://cdn.fusionbrain.ai/static/download/img-style-personal.png" alt="Превью стиля" />
+
+      <h3>Выберите размеры изображения</h3>
+      <label>Ширина (макс 1024, кратно 64):</label>
+      <input type="number" id="width" name="width" min="64" max="1024" step="64" value="1024" />
+      <label>Высота (макс 1024, кратно 64):</label>
+      <input type="number" id="height" name="height" min="64" max="1024" step="64" value="1024" />
+
+      <h3>Введите негативный промт (если нужно)</h3>
+      <textarea id="negativePrompt" name="negative_prompt" placeholder="Пример: небо, люди, здания" rows="3"></textarea>
+
+      <h3>Введите описание изображения</h3>
+      <textarea id="prompt" name="prompt" placeholder="Опишите что хотите создать" rows="3" required></textarea>
+      <div style="display: flex; gap: 310px;">
+        <button type="button" onclick="window.location.href = '/'">Назад</button>
+        <button type="submit">Отправить</button>
+      </div>
+    </form>
+
+    <!-- Loading message -->
+    <div id="loadingMessage" class="loading-message">Изображение генерируется. Пожалуйста, подождите 10 секунд...</div>
+    <!-- Success message -->
+    <div id="successMessage" class="success-message">Изображение готово!</div>
+  </div>
+
+  <!-- Ready Images Tab -->
+  <div id="readyImages" class="tab-content">
+    <h3>Готовые изображения</h3>
+    <div id="imagesContainer"></div>
+  </div>
+
+</div>
+
+<script>
+  const styles = {
+    DEFAULT: "https://cdn.fusionbrain.ai/static/download/img-style-personal.png",
+    KANDINSKY: "https://cdn.fusionbrain.ai/static/download/img-style-kandinsky.png",
+    UHD: "https://cdn.fusionbrain.ai/static/download/img-style-detail-photo.png",
+    ANIME: "https://cdn.fusionbrain.ai/static/download/anime_new.jpg"
+  };
+
+  document.getElementById("styleSelector").addEventListener("change", function() {
+    const selected = this.value;
+    document.getElementById("stylePreview").src = styles[selected];
+  });
+
+  document.getElementById("imageForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const prompt = document.getElementById("prompt").value.trim();
+    const style = document.getElementById("styleSelector").value;
+    const width = parseInt(document.getElementById("width").value);
+    const height = parseInt(document.getElementById("height").value);
+    const negativePrompt = document.getElementById("negativePrompt").value.trim();
+
+    if (!prompt) {
+      alert("Пожалуйста, введите описание изображения.");
+      return;
+    }
+
+    const payload = {
+      prompt: prompt,
+      width: width,
+      height: height,
+      style: style,
+      negative_prompt: negativePrompt
+    };
+
+    // Показываем сообщение о загрузке
+    document.getElementById("loadingMessage").style.display = "block";
+    document.getElementById("successMessage").style.display = "none"; // скрываем сообщение о готовности, если оно показывалось раньше
+
+    fetch('/generate-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+      const base64Image = data.images[0]; // бери base64 строку
+      const img = document.createElement('img');
+      img.src = `data:image/jpeg;base64,${base64Image}`; // создать правильный src
+
+      // Добавление изображения в контейнер на вкладке "Ready Images"
+      const imagesContainer = document.getElementById("imagesContainer");
+      const imgElement = document.createElement("img");
+      imgElement.src = img.src;
+      imgElement.style.maxWidth = "300px";
+      imagesContainer.appendChild(imgElement);
+
+      // Скрываем сообщение о загрузке
+      document.getElementById("loadingMessage").style.display = "none";
+      // Показываем сообщение о готовности
+      document.getElementById("successMessage").style.display = "block";
+
+      // Скрываем сообщение о готовности через 5 секунд
+      setTimeout(function() {
+        document.getElementById("successMessage").style.display = "none";
+      }, 5000);
+    })
+    .catch(err => {
+      console.error("Ошибка запроса:", err);
+      document.getElementById("loadingMessage").style.display = "none"; // скрыть сообщение об ошибке
+    });
+  });
+
+  function showTab(tabName) {
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.classList.remove('active-content');
+    });
+
+    const activeTab = document.querySelector(`#${tabName}`);
+    activeTab.classList.add('active-content');
+
+    const tabButtons = document.querySelectorAll('.tab');
+    tabButtons.forEach(button => {
+      button.classList.remove('active-tab');
+    });
+
+    const activeButton = document.querySelector(`button[onclick="showTab('${tabName}')"]`);
+    activeButton.classList.add('active-tab');
+  }
+</script>
+</body>
+</html>

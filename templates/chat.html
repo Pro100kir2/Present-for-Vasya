@@ -247,6 +247,15 @@
       text-align: right;
       margin-top: 0; /* Убираем верхний отступ */
     }
+    .generate-button {
+      background: url('../static/icon_generate.png') no-repeat center;
+      background-size: contain;
+      background-color: #d1d7e3;
+      width: 60px;
+      height: 80px;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -286,7 +295,10 @@
       {% elif message.role == 'assistant' %}
         <div class="message assistant" data-timestamp="{{ message.timestamp }}">
           {{ message.content }}
-
+            <div class="image-container" id="imageContainer" style="display: none;">
+                <h3>Ваше изображение : </h3>
+                <img id="generatedImage" src="" alt="Generated Image" style="max-width: 100%;"/>
+            </div>
           <button class="copy-button">⧉</button>
         </div>
       {% endif %}
@@ -296,6 +308,7 @@
 
     <div class="input-area">
       <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
+      <a href="{{ url_for('image_chat') }}" class="generate-button"></a>
       <button id="sendButton" onclick="sendMessage()" disabled>→</button>
     </div>
   </div>
@@ -303,6 +316,19 @@
   <script>
     window.onload = function() {
       const chatBox = document.getElementById('chat');
+      const imageContainer = document.getElementById('imageContainer');
+      const generatedImage = document.getElementById('generatedImage');
+
+      // Проверка на наличие изображения
+      const imageBase64 = localStorage.getItem('generatedImage'); // Получаем картинку из localStorage
+
+      if (imageBase64) {
+        // Если картинка есть, показываем её
+        generatedImage.src = `data:image/jpeg;base64,${imageBase64}`;
+        imageContainer.style.display = 'block'; // Показываем контейнер с изображением
+        localStorage.removeItem('generatedImage'); // Убираем картинку после отображения
+      }
+
       if (chatBox.children.length === 0) {
         welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
       }

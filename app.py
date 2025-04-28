@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
+from fusionbrain_api import FusionBrainAPI
 from contextlib import closing
 from dotenv import load_dotenv
 import mysql.connector
@@ -7,6 +8,7 @@ import threading
 import requests
 import logging
 import urllib3
+import difflib
 import json
 import time
 import os
@@ -94,6 +96,9 @@ threading.Thread(target=token_updater, daemon=True).start()
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 app.config['SECRET_KEY'] = SECRET_KEY
+
+# Создаём экземпляр API при старте
+fusionbrain = FusionBrainAPI()
 
 conversation_history = []
 
@@ -427,6 +432,54 @@ def send_message():
         return jsonify({"error": "Пустой запрос"}), 400
     response, conversation_history = get_chat_completions(user_message, conversation_history)
     return jsonify({"response": response})
+
+@app.route('/image_chat', methods=['Get','POST'])
+def image_chat():
+    return render_template('image_chat.html')
+
+@app.route('/generate-image', methods=['POST'])
+def generate_image():
+    """
+    Маршрут для генерации изображения через FusionBrain API.
+    Ожидает JSON с полями message (команда пользователя) + параметрами генерации.
+    """
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'Пустой запрос.'}), 400
+
+    # Запрашиваем детали генерации
+    prompt = data.get('prompt')
+    width = data.get('width', 1024)
+    height = data.get('height', 1024)
+    style = data.get('style')
+    negative_prompt = data.get('negative_prompt')
+    num_images = 1  # всегда одно изображение
+
+    if not prompt:
+        return jsonify({'error': 'Поле prompt обязательно для генерации.'}), 400
+
+    try:
+        # Генерация изображения через FusionBrain
+        uuid = fusionbrain.generate_image(
+            prompt=prompt,
+            width=width,
+            height=height,
+            num_images=num_images,
+            style=style,
+            negative_prompt=negative_prompt
+        )
+
+        # Проверка статуса генерации
+        files = fusionbrain.check_status(uuid)
+
+        if files:
+            return jsonify({'images': files})
+        else:
+            return jsonify({'error': 'Не удалось сгенерировать изображение или истекло время ожидания.'}), 500
+
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при генерации изображения: {str(e)}'}), 500
 
 @app.route('/yandex_dffe98de3ad223d3.html', methods=["GET"])
 def yandex_dffe98de3ad223d3():
