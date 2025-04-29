@@ -1,92 +1,173 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Генерация изображения</title>
   <link rel="icon" href="../static2/favicon.ico" type="image/x-icon" />
   <link rel="icon" type="image/x-icon" href="https://www.v-isa.ru/favicon.ico" />
   <style>
-    body {
-      background: #1e1e1e;
-      color: #f5f5f5;
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
-    h3 { color: #10b981; }
-    label { display: block; margin-top: 10px; }
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      border: 1px solid #444;
-      border-radius: 8px;
-      background: #2a2a2a;
-      color: #fff;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 20px;
-      padding: 12px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background: #10b981;
-      color: #fff;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0f9f75;
-    }
-    img { margin-top: 10px; max-width: 300px; }
+  body {
+    background: #1e1e1e;
+    color: #f5f5f5;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 10px;
+  }
+
+  h3 {
+    color: #10b981;
+  }
+
+  label {
+    display: block;
+    margin-top: 10px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    height: 54px;
+    padding: 8px 12px;
+    margin-top: 4px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  button {
+    padding: 14px 24px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background: #10b981;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #0f9f75;
+  }
+
+  img {
+    margin-top: 10px;
+    max-width: 100%;
+    border-radius: 10px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .tabs {
+    display: flex;
+    justify-content: space-between;
+    background-color: #333;
+    padding: 10px 0;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    gap: 10px;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    color: #fff;
+    background-color: #444;
+    border: none;
+    border-radius: 10px;
+    min-width: 160px;
+  }
+
+  .tab:hover {
+    background-color: #555;
+  }
+
+  .active-tab {
+    background-color: #10b981;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .active-content {
+    display: block;
+  }
+
+  .loading-message, .success-message {
+    margin-top: 20px;
+    font-size: 16px;
+    display: none;
+  }
+
+  .loading-message {
+    color: #f5a623;
+  }
+
+  .success-message {
+    color: #10b981;
+  }
+
+  #stylePreview {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+
+  .btn-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 30px;
+  }
+
+  @media (max-width: 600px) {
     .container {
-      max-width: 500px;
-      margin: auto;
+      max-width: 100%;
+      padding: 10px;
     }
+
+    input, select, textarea, button {
+      font-size: 14px;
+      padding: 10px;
+    }
+
     .tabs {
-      display: flex;
-      justify-content: space-around;
-      background-color: #333;
-      padding: 10px 0;
+      flex-direction: column;
+      align-items: stretch;
     }
+
     .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      color: #fff;
-      background-color: #444;
-      border: none;
-      border-radius: 5px;
+      margin-bottom: 10px;
+      width: 100%;
     }
-    .tab:hover {
-      background-color: #555;
+
+    .btn-row {
+      flex-direction: column;
+      gap: 12px;
     }
-    .active-tab {
-      background-color: #10b981;
-    }
-    .tab-content {
-      display: none;
-    }
-    .active-content {
-      display: block;
-    }
-    .loading-message, .success-message {
-      margin-top: 20px;
-      font-size: 16px;
-      display: none;
-    }
-    .loading-message {
-      color: #f5a623;
-    }
-    .success-message {
-      color: #10b981;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
 <div class="container">
   <div class="tabs">
-    <button class="tab active-tab" onclick="showTab('generate')">Создать изображение </button>
-    <button class="tab" onclick="showTab('readyImages')">Готовые изображения !</button>
+    <button class="tab active-tab" onclick="showTab('generate')">Создать изображение</button>
+    <button class="tab" onclick="showTab('readyImages')">Готовые изображения!</button>
   </div>
 
   <!-- Generate Tab -->
@@ -101,26 +182,30 @@
       </select>
       <img id="stylePreview" src="https://cdn.fusionbrain.ai/static/download/img-style-personal.png" alt="Превью стиля" />
 
-      <h3>Выберите размеры изображения</h3>
-      <label>Ширина (макс 1024, кратно 64):</label>
-      <input type="number" id="width" name="width" min="64" max="1024" step="64" value="1024" />
-      <label>Высота (макс 1024, кратно 64):</label>
-      <input type="number" id="height" name="height" min="64" max="1024" step="64" value="1024" />
+      <h3>Выберите соотношение сторон</h3>
+      <select id="aspectRatioSelector" name="aspect_ratio">
+        <option value="1:1">1:1</option>
+        <option value="3:2">3:2</option>
+        <option value="4:5">4:5</option>
+        <option value="16:9">16:9</option>
+        <option value="2:3">2:3</option>
+        <option value="5:4">5:4</option>
+        <option value="9:16">9:16</option>
+      </select>
+
+      <h3>Введите описание изображения</h3>
+      <textarea id="prompt" name="prompt" placeholder="Опишите что хотите создать" rows="3" required></textarea>
 
       <h3>Введите негативный промт (если нужно)</h3>
       <textarea id="negativePrompt" name="negative_prompt" placeholder="Пример: небо, люди, здания" rows="3"></textarea>
 
-      <h3>Введите описание изображения</h3>
-      <textarea id="prompt" name="prompt" placeholder="Опишите что хотите создать" rows="3" required></textarea>
-      <div style="display: flex; gap: 310px;">
+      <div class="btn-row">
         <button type="button" onclick="window.location.href = '/'">Назад</button>
         <button type="submit">Отправить</button>
       </div>
     </form>
 
-    <!-- Loading message -->
     <div id="loadingMessage" class="loading-message">Изображение генерируется. Пожалуйста, подождите 10 секунд...</div>
-    <!-- Success message -->
     <div id="successMessage" class="success-message">Изображение готово!</div>
   </div>
 
@@ -129,7 +214,6 @@
     <h3>Готовые изображения</h3>
     <div id="imagesContainer"></div>
   </div>
-
 </div>
 
 <script>
@@ -146,103 +230,95 @@
   });
 
   document.getElementById("imageForm").addEventListener("submit", function(event) {
-  event.preventDefault();
+    event.preventDefault();
 
-  const prompt = document.getElementById("prompt").value.trim();
-  const style = document.getElementById("styleSelector").value;
-  const width = parseInt(document.getElementById("width").value);
-  const height = parseInt(document.getElementById("height").value);
-  const negativePrompt = document.getElementById("negativePrompt").value.trim();
+    const prompt = document.getElementById("prompt").value.trim();
+    const style = document.getElementById("styleSelector").value;
+    const negativePrompt = document.getElementById("negativePrompt").value.trim();
+    const aspectRatio = document.getElementById("aspectRatioSelector").value;
+    const [wRatio, hRatio] = aspectRatio.split(":").map(Number);
 
-  if (!prompt) {
-    alert("Пожалуйста, введите описание изображения.");
-    return;
-  }
+    let scale = 1024 / Math.max(wRatio, hRatio);
+    let width = Math.round((wRatio * scale) / 64) * 64;
+    let height = Math.round((hRatio * scale) / 64) * 64;
 
-  const payload = {
-    prompt: prompt,
-    width: width,
-    height: height,
-    style: style,
-    negative_prompt: negativePrompt
-  };
+    const payload = {
+      prompt: prompt,
+      width: width,
+      height: height,
+      style: style,
+      negative_prompt: negativePrompt
+    };
 
-  const loadingMessage = document.getElementById("loadingMessage");
-  const successMessage = document.getElementById("successMessage");
+    const loadingMessage = document.getElementById("loadingMessage");
+    const successMessage = document.getElementById("successMessage");
 
-  loadingMessage.innerText = "Изображение генерируется. Пожалуйста, подождите 10 секунд...";
-  loadingMessage.style.display = "block";
-  successMessage.style.display = "none";
+    loadingMessage.innerText = "Изображение генерируется. Пожалуйста, подождите 10 секунд...";
+    loadingMessage.style.display = "block";
+    successMessage.style.display = "none";
 
-  // Промежуточные сообщения
-  const stillGeneratingTimeout = setTimeout(() => {
-    loadingMessage.innerText = "Всё ещё генерируется... Пожалуйста, подождите ещё немного.";
-  }, 8000);
+    const stillGeneratingTimeout = setTimeout(() => {
+      loadingMessage.innerText = "Всё ещё генерируется... Пожалуйста, подождите ещё немного.";
+    }, 8000);
 
-  const almostReadyTimeout = setTimeout(() => {
-    loadingMessage.innerText = "Почти готово! Совсем чуть-чуть...";
-  }, 16000);
+    const almostReadyTimeout = setTimeout(() => {
+      loadingMessage.innerText = "Почти готово! Совсем чуть-чуть...";
+    }, 16000);
 
-  fetch('/generate-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  .then(response => response.json())
-  .then(data => {
-    const uuid = data.uuid;
+    fetch('/generate-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+      const uuid = data.uuid;
 
-    const checkInterval = setInterval(() => {
-      fetch(`/check-status?uuid=${uuid}`)
-        .then(res => res.json())
-        .then(statusData => {
-          if (statusData.ready) {
-            clearInterval(checkInterval);
-            clearTimeout(stillGeneratingTimeout);
-            clearTimeout(almostReadyTimeout);
+      const checkInterval = setInterval(() => {
+        fetch(`/check-status?uuid=${uuid}`)
+          .then(res => res.json())
+          .then(statusData => {
+            if (statusData.ready) {
+              clearInterval(checkInterval);
+              clearTimeout(stillGeneratingTimeout);
+              clearTimeout(almostReadyTimeout);
 
-            const base64Image = statusData.images[0];
-            const img = document.createElement('img');
-            img.src = `data:image/jpeg;base64,${base64Image}`;
+              const base64Image = statusData.images[0];
+              const img = document.createElement('img');
+              img.src = `data:image/jpeg;base64,${base64Image}`;
 
-            const imagesContainer = document.getElementById("imagesContainer");
-            const imgElement = document.createElement("img");
-            imgElement.src = img.src;
-            imgElement.style.maxWidth = "300px";
-            imagesContainer.appendChild(imgElement);
+              const imagesContainer = document.getElementById("imagesContainer");
+              const imgElement = document.createElement("img");
+              imgElement.src = img.src;
+              imagesContainer.appendChild(imgElement);
 
-            loadingMessage.style.display = "none";
-            successMessage.style.display = "block";
+              loadingMessage.style.display = "none";
+              successMessage.style.display = "block";
 
-            setTimeout(() => {
-              successMessage.style.display = "none";
-            }, 5000);
-          }
-        });
-    }, 5000); // Проверять каждые 5 секунд
-  })
-  .catch(err => {
-    clearTimeout(stillGeneratingTimeout);
-    clearTimeout(almostReadyTimeout);
-
-    console.error("Ошибка запроса:", err);
-    loadingMessage.style.display = "none";
+              setTimeout(() => {
+                successMessage.style.display = "none";
+              }, 5000);
+            }
+          });
+      }, 5000);
+    })
+    .catch(err => {
+      clearTimeout(stillGeneratingTimeout);
+      clearTimeout(almostReadyTimeout);
+      console.error("Ошибка запроса:", err);
+      loadingMessage.style.display = "none";
+    });
   });
-});
 
   function showTab(tabName) {
     const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-      tab.classList.remove('active-content');
-    });
+    tabs.forEach(tab => tab.classList.remove('active-content'));
 
     const activeTab = document.querySelector(`#${tabName}`);
     activeTab.classList.add('active-content');
 
     const tabButtons = document.querySelectorAll('.tab');
-    tabButtons.forEach(button => {
-      button.classList.remove('active-tab');
-    });
+    tabButtons.forEach(button => button.classList.remove('active-tab'));
 
     const activeButton = document.querySelector(`button[onclick="showTab('${tabName}')"]`);
     activeButton.classList.add('active-tab');
