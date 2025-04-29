@@ -141,7 +141,7 @@
   }
 
   input, select, textarea {
-    font-size: 10px;
+    font-size: 8px;
     padding: 8px 12px;
     height: auto;
     line-height: 1.4;
@@ -179,6 +179,20 @@
     gap: 4px;
     flex-wrap: wrap;
   }
+  @media (max-height: 700px) {
+    h3 {
+      font-size: 14px; /* уменьшаем шрифт при маленькой высоте экрана */
+    }
+
+    input, select, textarea {
+      font-size: 12px;
+    }
+
+    button {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+  }
 }
 </style>
 </head>
@@ -186,7 +200,7 @@
 <div class="container">
   <div class="tabs">
     <button class="tab active-tab" onclick="showTab('generate')">Создать изображение</button>
-    <button class="tab" onclick="showTab('readyImages')">Готовые изображения!</button>
+    <button class="tab" onclick="showTab('readyImages')">Готовые изображения</button>
   </div>
 
   <!-- Generate Tab -->
@@ -215,8 +229,8 @@
       <h3>Введите описание изображения</h3>
       <textarea id="prompt" name="prompt" placeholder="Опишите что хотите создать" rows="3" required></textarea>
 
-      <h3>Введите негативный промт (если нужно)</h3>
-      <textarea id="negativePrompt" name="negative_prompt" placeholder="Пример: небо, люди, здания" rows="3"></textarea>
+      <h3>Введите то, что хотите чтобы нейросеть избегала (если нужно)</h3>
+      <textarea id="negativePrompt" name="negative_prompt" placeholder="Пример: небо, яркие оттенки, кислотный" rows="3"></textarea>
 
       <div class="btn-row">
         <button type="button" onclick="window.location.href = '/'">Назад</button>
