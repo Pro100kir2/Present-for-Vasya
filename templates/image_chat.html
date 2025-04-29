@@ -143,7 +143,7 @@
   input, select, textarea {
     font-size: 14px;
     padding: 10px;
-    height: auto; /* убираем фиксированную высоту */
+    height: auto;
   }
 
   textarea {
@@ -157,18 +157,22 @@
   }
 
   .tabs {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .tab {
-    margin-bottom: 10px;
-    width: 100%;
+    margin-bottom: 0;
+    width: auto;
+    flex: 1 1 auto;
   }
 
   .btn-row {
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 }
 </style>
@@ -190,7 +194,7 @@
         <option value="UHD">Детальное фото</option>
         <option value="ANIME">Аниме</option>
       </select>
-<!--      <img id="stylePreview" src="https://cdn.fusionbrain.ai/static/download/img-style-personal.png" alt="Превью стиля" />-->
+      <img id="stylePreview" src="https://cdn.fusionbrain.ai/static/download/img-style-personal.png" alt="Превью стиля" />
 
       <h3>Выберите соотношение сторон</h3>
       <select id="aspectRatioSelector" name="aspect_ratio">
