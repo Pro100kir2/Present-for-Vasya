@@ -160,10 +160,11 @@
     .input-area {
       display: flex;
       border-top: 1px solid #333;
-      padding: 16px 0 0;
-      gap: 12px;
-      align-items: stretch;
+      padding: 8px 0 8px;
+      gap: 4px;
+      align-items: flex-end;
     }
+
     textarea {
       flex: 1;
       min-height: 44px;
@@ -184,7 +185,7 @@
       background-color: var(--button-bg);
       color: #fff;
       border: none;
-      padding: 12px 20px;
+      padding: 25px 20px;
       border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
@@ -239,29 +240,46 @@
     }
 
     .timestamp {
-      font-size: 12px;
-      color: #ffffff;
-      position: absolute;
-      bottom: 6px;  /* Располагаем внизу */
-      right: 16px;  /* По желанию, отступ от правого края */
-      text-align: right;
-      margin-top: 0; /* Убираем верхний отступ */
+        font-size: 12px;
+        color: #ffffff;
+        position: absolute;
+        bottom: 6px; /* Располагаем внизу */
+        right: 16px; /* По желанию, отступ от правого края */
+        text-align: right;
+        margin-top: 0; /* Убираем верхний отступ */
     }
-    .generate-button {
-      background: url('../static/icon_generate.png') no-repeat center;
-      background-size: contain;
-      background-color: #d1d7e3;
-      width: 60px;
-      height: 80px;
-      border: none;
-      cursor: pointer;
-      border-radius: 10px; /* Добавлено для закругления углов */
-    }
+.tab-navigation {
+  margin-top: 20px; /* Просто опускаем навигацию ниже */
+}
+
+.tab {
+  padding: 12px 24px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: bold;
+  border-bottom: 3px solid transparent;
+  transition: border-bottom 0.3s, color 0.3s;
+}
+
+.tab:hover {
+  color: var(--accent);
+}
+
+.tab.active {
+  border-bottom: 3px solid var(--accent);
+  color: var(--accent);
+}
+
   </style>
 </head>
 <body>
 <header>
     Чат с Василием
+    <nav class="tab-navigation">
+        <a href="/chat" class="tab {% if request.path == '/' %}active{% endif %}">Вася расскажи</a>
+        <a href="/image_chat" class="tab {% if request.path == '/image_chat' %}active{% endif %}">Вася нарисуй</a>
+    </nav>
+
     <div class="user-info">
       <!-- Если пользователь вошел, показываем ссылки для настроек и выхода -->
       {% if 'user_id' in session %}
@@ -309,7 +327,6 @@
 
     <div class="input-area">
       <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
-      <a href="{{ url_for('image_chat') }}" class="generate-button"></a>
       <button id="sendButton" onclick="sendMessage()" disabled>→</button>
     </div>
   </div>
