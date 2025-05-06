@@ -288,7 +288,7 @@ def static_files(filename):
     response.cache_control.no_store = True
     return response
 
-
+@csrf.exempt
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
