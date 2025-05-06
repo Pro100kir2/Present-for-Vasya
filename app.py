@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from fusionbrain_api import FusionBrainAPI
-from flask_wtf import CSRFProtect
 from contextlib import closing
 from dotenv import load_dotenv
 import mysql.connector
@@ -288,7 +287,6 @@ def static_files(filename):
     response.cache_control.no_store = True
     return response
 
-@csrf.exempt
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':

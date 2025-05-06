@@ -121,7 +121,6 @@
     <h2>Настройки профиля</h2>
     <div id="errorMessage" class="error"></div>
     <form method="POST">
-      {{ form.hidden_tag() }}
       <label for="name">Имя</label>
       <input type="text" id="name" name="name" required value="{{ user[0] }}" />
       <label for="email">Электронная почта</label>
