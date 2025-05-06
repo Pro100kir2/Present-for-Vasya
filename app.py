@@ -314,7 +314,6 @@ def register():
             return f"Ошибка базы данных: {err}", 500
     return render_template('register.html')
 
-@csrf.exempt
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     print(f"Сессия: {session}")
