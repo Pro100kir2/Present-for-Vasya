@@ -96,7 +96,6 @@ threading.Thread(target=token_updater, daemon=True).start()
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 app.config['SECRET_KEY'] = SECRET_KEY
-csrf = CSRFProtect(app)
 # Создаём экземпляр API при старте
 fusionbrain = FusionBrainAPI()
 generation_tasks = {}  # Словарь для хранения статусов
