@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from fusionbrain_api import FusionBrainAPI
+from flask_wtf import CSRFProtect
 from contextlib import closing
 from dotenv import load_dotenv
 import mysql.connector
@@ -96,7 +97,7 @@ threading.Thread(target=token_updater, daemon=True).start()
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 app.config['SECRET_KEY'] = SECRET_KEY
-
+csrf = CSRFProtect(app)
 # Создаём экземпляр API при старте
 fusionbrain = FusionBrainAPI()
 generation_tasks = {}  # Словарь для хранения статусов

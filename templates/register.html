@@ -120,6 +120,7 @@
     <h2>Регистрация</h2>
     <div id="errorMessage" class="error"></div>
     <form id="registerForm" method="POST">
+      {{ form.hidden_tag() }}
       <label for="name">Имя</label>
       <input type="text" id="name" name="name" required placeholder="Введите ваше имя" />
 
