@@ -310,8 +310,7 @@
     </div>
   </div>
 
-  <script>
-
+<script>
   const textarea = document.getElementById('userInput');
   const STORAGE_KEY = 'unsentChatMessage';
 
@@ -329,172 +328,217 @@
     localStorage.setItem(STORAGE_KEY, textarea.value);
   });
 
-  // Очищаем сохранённый текст после отправки сообщения
-  function sendMessage() {
-    const text = textarea.value.trim();
-    if (!text) return;
-    textarea.value = '';
-    toggleButton();
-    localStorage.removeItem(STORAGE_KEY); // <-- очищаем сохранённое
+  window.onload = function () {
+    const chatBox = document.getElementById('chat');
+    if (chatBox.children.length === 0) {
+      welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
+    }
 
+    fetch('/get_messages')
+      .then(response => response.json())
+      .then(data => {
+        if (data.messages) {
+          data.messages.forEach(message => {
+            appendMessage(message.content, message.sender);
+          });
+        }
+      })
+      .catch(err => {
+        console.error("Ошибка при загрузке сообщений:", err);
+      });
+  };
+
+  let isBotTyping = false;
+  let typingTimeout;
+  let botMessageDiv;
+  let welcomeMessageDiv = null;
+
+  window.onload = function () {
+    const chatBox = document.getElementById('chat');
+    if (chatBox.children.length === 0) {
+      welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
+    }
+
+    const userImage = document.getElementById('userImage');
+    const userInfo = document.querySelector('.user-info');
+    const dropdown = document.querySelector('.dropdown');
+    const loginLink = document.getElementById('loginLink');
+    const registerLink = document.getElementById('registerLink');
+    const settingsLink = document.getElementById('settingsLink');
+    const upgradeLink = document.getElementById('upgradeLink');
+    const logoutLink = document.getElementById('logoutLink');
+
+    // Проверка авторизации пользователя
+    const isLoggedIn = false; // Это временное значение, его надо заменить на реальную логику авторизации
+
+    if (isLoggedIn) {
+      userImage.src = "../static/fabula-ai-autorigistr.png"; // Зарегистрированный пользователь
+      loginLink.style.display = "none";
+      registerLink.style.display = "none";
+      settingsLink.style.display = "block";
+      upgradeLink.style.display = "block";
+      logoutLink.style.display = "block";
+    } else {
+      userImage.src = "../static/default-avatar.png"; // Неавторизованный пользователь
+      loginLink.style.display = "block";
+      registerLink.style.display = "block";
+      settingsLink.style.display = "none";
+      upgradeLink.style.display = "none";
+      logoutLink.style.display = "none";
+    }
+
+    // Обработчик для переключения меню
+    userInfo.addEventListener('click', function () {
+      dropdown.classList.toggle('show');
+    });
+  };
+
+  function toggleButton() {
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendButton');
+
+    if (isBotTyping) {
+      btn.disabled = false;
+      btn.textContent = "❌";
+      btn.classList.add("cancel");
+    } else {
+      btn.disabled = input.value.trim() === "";
+      btn.textContent = input.value.trim() === "" ? "→" : "→";
+      btn.classList.remove("cancel");
+    }
+
+    btn.onclick = function () {
+      if (isBotTyping) {
+        stopTyping();
+      } else {
+        sendMessage();
+      }
+    };
   }
 
-      if (chatBox.children.length === 0) {
-        welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
-      }
+  function stopTyping() {
+    clearTimeout(typingTimeout);
+    isBotTyping = false;
+    toggleButton();
+    botMessageDiv.textContent = '';
+  }
 
-      fetch('/get_messages')
-        .then(response => response.json())
-        .then(data => {
-          if (data.messages) {
-            data.messages.forEach(message => {
-              appendMessage(message.content, message.sender);
-            });
-          }
-        })
-        .catch(err => {
-          console.error("Ошибка при загрузке сообщений:", err);
-        });
-    };
+  function autoResize() {
+    const input = document.getElementById('userInput');
+    input.style.height = "auto";
+    input.style.height = (input.scrollHeight) + "px";
+  }
 
-    let isBotTyping = false;
-    let typingTimeout;
-    let botMessageDiv;
-    let welcomeMessageDiv = null;
-
-    window.onload = function() {
-      const chatBox = document.getElementById('chat');
-      if (chatBox.children.length === 0) {
-        welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
-      }
-
-      const userImage = document.getElementById('userImage');
-      const userInfo = document.querySelector('.user-info');
-      const dropdown = document.querySelector('.dropdown');
-      const loginLink = document.getElementById('loginLink');
-      const registerLink = document.getElementById('registerLink');
-      const settingsLink = document.getElementById('settingsLink');
-      const upgradeLink = document.getElementById('upgradeLink');
-      const logoutLink = document.getElementById('logoutLink');
-
-      // Проверка авторизации пользователя
-      const isLoggedIn = false; // Это временное значение, его надо заменить на реальную логику авторизации
-
-      if (isLoggedIn) {
-        userImage.src = "../static/fabula-ai-autorigistr.png"; // Зарегистрированный пользователь
-        loginLink.style.display = "none";
-        registerLink.style.display = "none";
-        settingsLink.style.display = "block";
-        upgradeLink.style.display = "block";
-        logoutLink.style.display = "block";
-      } else {
-        userImage.src = "../static/default-avatar.png"; // Неавторизованный пользователь
-        loginLink.style.display = "block";
-        registerLink.style.display = "block";
-        settingsLink.style.display = "none";
-        upgradeLink.style.display = "none";
-        logoutLink.style.display = "none";
-      }
-
-      // Обработчик для переключения меню
-      userInfo.addEventListener('click', function() {
-        dropdown.classList.toggle('show');
-      });
-    };
-
-    function toggleButton() {
-      const input = document.getElementById('userInput');
-      const btn = document.getElementById('sendButton');
-
-      if (isBotTyping) {
-        btn.disabled = false;
-        btn.textContent = "❌";
-        btn.classList.add("cancel");
-      } else {
-        btn.disabled = input.value.trim() === "";
-        btn.textContent = input.value.trim() === "" ? "→" : "→";
-        btn.classList.remove("cancel");
-      }
-
-      btn.onclick = function() {
-        if (isBotTyping) {
-          stopTyping();
-        } else {
-          sendMessage();
-        }
-      };
-    }
-
-    function stopTyping() {
-      clearTimeout(typingTimeout);
-      isBotTyping = false;
-      toggleButton();
-      botMessageDiv.textContent = '';
-    }
-
-    function autoResize() {
-      const input = document.getElementById('userInput');
-      input.style.height = "auto";
-      input.style.height = (input.scrollHeight) + "px";
-    }
-    textarea.addEventListener('keydown', function(e) {
+  textarea.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+      e.preventDefault();
+      sendMessage();
     }
-    });
+  });
 
-    function getTimeAgo(date) {
-      const now = new Date();
-      const diffMs = now - date;
-      const seconds = Math.floor(diffMs / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
+  function getTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-      if (seconds < 60) return 'только что';
-      if (minutes === 1) return '1 минуту назад';
-      if (minutes < 60) return `${minutes} минут назад`;
-      if (hours === 1) return '1 час назад';
-      if (hours < 24) return `${hours} часов назад`;
-      if (days === 1) return '1 день назад';
-      return `${days} дней назад`;
-    }
+    if (seconds < 60) return 'только что';
+    if (minutes === 1) return '1 минуту назад';
+    if (minutes < 60) return `${minutes} минут назад`;
+    if (hours === 1) return '1 час назад';
+    if (hours < 24) return `${hours} часов назад`;
+    if (days === 1) return '1 день назад';
+    return `${days} дней назад`;
+  }
 
-    function updateAllTimestamps() {
-      document.querySelectorAll('.message').forEach(msg => {
-        const span = msg.querySelector('.timestamp');
-        const iso = msg.dataset.timestamp;
-        if (span && iso) {
-          span.textContent = getTimeAgo(new Date(iso));
-        }
-      });
-    }
-
-    setInterval(updateAllTimestamps, 30000);
-
-    function appendMessage(content, sender) {
-      const chatBox = document.getElementById('chat');
-      const wrapper = document.createElement('div');
-      wrapper.className = sender === 'user' ? 'user-wrapper' : 'assistant-wrapper';
-
-      const div = document.createElement('div');
-      div.className = `message ${sender}`;
-      const sentAt = new Date();
-      div.dataset.timestamp = sentAt.toISOString();
-
-      if (sender === 'assistant') {
-        div.innerHTML = content;
-      } else {
-        div.textContent = content;
+  function updateAllTimestamps() {
+    document.querySelectorAll('.message').forEach(msg => {
+      const span = msg.querySelector('.timestamp');
+      const iso = msg.dataset.timestamp;
+      if (span && iso) {
+        span.textContent = getTimeAgo(new Date(iso));
       }
+    });
+  }
 
-      const timestamp = document.createElement('span');
-      timestamp.className = 'timestamp';
-      timestamp.textContent = getTimeAgo(sentAt);
-      div.appendChild(timestamp);
+  setInterval(updateAllTimestamps, 30000);
 
-      if (sender === 'assistant') {
+  function appendMessage(content, sender) {
+    const chatBox = document.getElementById('chat');
+    const wrapper = document.createElement('div');
+    wrapper.className = sender === 'user' ? 'user-wrapper' : 'assistant-wrapper';
+
+    const div = document.createElement('div');
+    div.className = `message ${sender}`;
+    const sentAt = new Date();
+    div.dataset.timestamp = sentAt.toISOString();
+
+    if (sender === 'assistant') {
+      div.innerHTML = content;
+    } else {
+      div.textContent = content;
+    }
+
+    const timestamp = document.createElement('span');
+    timestamp.className = 'timestamp';
+    timestamp.textContent = getTimeAgo(sentAt);
+    div.appendChild(timestamp);
+
+    if (sender === 'assistant') {
+      const copyButton = document.createElement('button');
+      copyButton.className = 'copy-button';
+      copyButton.innerHTML = '⧉';
+      copyButton.title = 'Copy';
+      copyButton.onclick = function () {
+        navigator.clipboard.writeText(content).then(() => {
+          copyButton.innerHTML = '✅';
+          copyButton.disabled = true;
+        });
+      };
+      div.appendChild(copyButton);
+    }
+
+    wrapper.appendChild(div);
+    chatBox.appendChild(wrapper);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function simulateBotTyping(content) {
+    isBotTyping = true;
+    toggleButton();
+
+    const chatBox = document.getElementById('chat');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'assistant-wrapper';
+    botMessageDiv = document.createElement('div');
+    botMessageDiv.className = 'message assistant';
+    botMessageDiv.textContent = '';
+    const sentAt = new Date();
+    botMessageDiv.dataset.timestamp = sentAt.toISOString();
+
+    wrapper.appendChild(botMessageDiv);
+    chatBox.appendChild(wrapper);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    let index = 0;
+
+    function typeMessage() {
+      if (index < content.length) {
+        botMessageDiv.textContent += content[index];
+        index++;
+        typingTimeout = setTimeout(typeMessage, 30);
+      } else {
+        isBotTyping = false;
+        toggleButton();
+        botMessageDiv.innerHTML = content;
+
+        const timestamp = document.createElement('span');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = getTimeAgo(sentAt);
+        botMessageDiv.appendChild(timestamp);
+
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-button';
         copyButton.innerHTML = '⧉';
@@ -505,91 +549,47 @@
             copyButton.disabled = true;
           });
         };
-        div.appendChild(copyButton);
+        botMessageDiv.appendChild(copyButton);
       }
-
-      wrapper.appendChild(div);
-      chatBox.appendChild(wrapper);
-      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    function simulateBotTyping(content) {
-      isBotTyping = true;
-      toggleButton();
+    setTimeout(typeMessage, 30);
+    return wrapper;
+  }
 
-      const chatBox = document.getElementById('chat');
-      const wrapper = document.createElement('div');
-      wrapper.className = 'assistant-wrapper';
-      botMessageDiv = document.createElement('div');
-      botMessageDiv.className = 'message assistant';
-      botMessageDiv.textContent = '';
-      const sentAt = new Date();
-      botMessageDiv.dataset.timestamp = sentAt.toISOString();
+  function confirmClear() {
+    return confirm("Вы уверены, что хотите очистить переписку?");
+  }
 
-      wrapper.appendChild(botMessageDiv);
-      chatBox.appendChild(wrapper);
-      chatBox.scrollTop = chatBox.scrollHeight;
+  function sendMessage() {
+    const input = document.getElementById('userInput');
+    const message = input.value.trim();
+    if (message === "") return;
 
-      let index = 0;
+    appendMessage(message, 'user');
+    input.value = "";
+    autoResize();
+    toggleButton();
 
-      function typeMessage() {
-        if (index < content.length) {
-          botMessageDiv.textContent += content[index];
-          index++;
-          typingTimeout = setTimeout(typeMessage, 30);
-        } else {
-          isBotTyping = false;
-          toggleButton();
-          botMessageDiv.innerHTML = content;
+    const text = textarea.value.trim();
+    if (!text) return;
+    textarea.value = '';
+    toggleButton();
+    localStorage.removeItem(STORAGE_KEY);
 
-          const timestamp = document.createElement('span');
-          timestamp.className = 'timestamp';
-          timestamp.textContent = getTimeAgo(sentAt);
-          botMessageDiv.appendChild(timestamp);
-
-          const copyButton = document.createElement('button');
-          copyButton.className = 'copy-button';
-          copyButton.innerHTML = '⧉';
-          copyButton.title = 'Copy';
-          copyButton.onclick = function () {
-            navigator.clipboard.writeText(content).then(() => {
-              copyButton.innerHTML = '✅';
-              copyButton.disabled = true;
-            });
-          };
-          botMessageDiv.appendChild(copyButton);
-        }
-      }
-
-      setTimeout(typeMessage, 30);
-      return wrapper;
+    const chatBox = document.getElementById('chat');
+    if (welcomeMessageDiv) {
+      chatBox.removeChild(welcomeMessageDiv);
+      welcomeMessageDiv = null;
     }
-    function confirmClear() {
-        return confirm("Вы уверены, что хотите очистить переписку?");
-    }
-    function sendMessage() {
-      const input = document.getElementById('userInput');
-      const message = input.value.trim();
-      if (message === "") return;
 
-      appendMessage(message, 'user');
-      input.value = "";
-      autoResize();
-      toggleButton();
+    if (isBotTyping) stopTyping();
 
-      const chatBox = document.getElementById('chat');
-      if (welcomeMessageDiv) {
-        chatBox.removeChild(welcomeMessageDiv);
-        welcomeMessageDiv = null;
-      }
-
-      if (isBotTyping) stopTyping();
-
-      fetch('/send_message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      })
+    fetch('/send_message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    })
       .then(res => res.json())
       .then(data => {
         if (data.response) {
@@ -602,7 +602,7 @@
         console.error(err);
         simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
       });
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
