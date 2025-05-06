@@ -290,16 +290,12 @@
       {% if message.role == 'user' %}
         <div class="user-wrapper">
           <div class="message user" data-timestamp="{{ message.timestamp }}">
-            {{ message.content }}
+            {{ message.content | e}}
           </div>
         </div>
       {% elif message.role == 'assistant' %}
         <div class="message assistant" data-timestamp="{{ message.timestamp }}">
-          {{ message.content }}
-            <div class="image-container" id="imageContainer" style="display: none;">
-                <h3>Ваше изображение : </h3>
-                <img id="generatedImage" src="" alt="Generated Image" style="max-width: 100%;"/>
-            </div>
+          {{ message.content | safe}}
           <button class="copy-button">⧉</button>
         </div>
       {% endif %}
@@ -315,20 +311,33 @@
   </div>
 
   <script>
-    window.onload = function() {
-      const chatBox = document.getElementById('chat');
-      const imageContainer = document.getElementById('imageContainer');
-      const generatedImage = document.getElementById('generatedImage');
 
-      // Проверка на наличие изображения
-      const imageBase64 = localStorage.getItem('generatedImage'); // Получаем картинку из localStorage
+  const textarea = document.getElementById('userInput');
+  const STORAGE_KEY = 'unsentChatMessage';
 
-      if (imageBase64) {
-        // Если картинка есть, показываем её
-        generatedImage.src = `data:image/jpeg;base64,${imageBase64}`;
-        imageContainer.style.display = 'block'; // Показываем контейнер с изображением
-        localStorage.removeItem('generatedImage'); // Убираем картинку после отображения
-      }
+  // Загружаем сохранённый текст при загрузке страницы
+  window.addEventListener('load', () => {
+    const savedText = localStorage.getItem(STORAGE_KEY);
+    if (savedText) {
+      textarea.value = savedText;
+      toggleButton();  // Чтобы кнопка отправки тоже активировалась, если текст не пустой
+    }
+  });
+
+  // Сохраняем текст при каждом вводе
+  textarea.addEventListener('input', () => {
+    localStorage.setItem(STORAGE_KEY, textarea.value);
+  });
+
+  // Очищаем сохранённый текст после отправки сообщения
+  function sendMessage() {
+    const text = textarea.value.trim();
+    if (!text) return;
+    textarea.value = '';
+    toggleButton();
+    localStorage.removeItem(STORAGE_KEY); // <-- очищаем сохранённое
+
+  }
 
       if (chatBox.children.length === 0) {
         welcomeMessageDiv = simulateBotTyping("Привет друг! Я ассистент Василий, буду рад с тобой пообщаться.");
@@ -428,6 +437,12 @@
       input.style.height = "auto";
       input.style.height = (input.scrollHeight) + "px";
     }
+    textarea.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+    });
 
     function getTimeAgo(date) {
       const now = new Date();
