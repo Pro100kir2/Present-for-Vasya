@@ -290,12 +290,12 @@
       {% if message.role == 'user' %}
         <div class="user-wrapper">
           <div class="message user" data-timestamp="{{ message.timestamp }}">
-            {{ message.content | e}}
+            {{ message.content}}
           </div>
         </div>
       {% elif message.role == 'assistant' %}
         <div class="message assistant" data-timestamp="{{ message.timestamp }}">
-          {{ message.content | safe}}
+          {{ message.content}}
           <button class="copy-button">⧉</button>
         </div>
       {% endif %}
@@ -562,47 +562,41 @@
   }
 
   function sendMessage() {
-    const input = document.getElementById('userInput');
-    const message = input.value.trim();
-    if (message === "") return;
+  const input = document.getElementById('userInput');
+  const message = input.value.trim();
+  if (message === "") return;
 
-    appendMessage(message, 'user');
-    input.value = "";
-    autoResize();
-    toggleButton();
+  appendMessage(message, 'user');
+  input.value = "";
+  autoResize();
+  toggleButton();
 
-    const text = textarea.value.trim();
-    if (!text) return;
-    textarea.value = '';
-    toggleButton();
-    localStorage.removeItem(STORAGE_KEY);
-
-    const chatBox = document.getElementById('chat');
-    if (welcomeMessageDiv) {
-      chatBox.removeChild(welcomeMessageDiv);
-      welcomeMessageDiv = null;
-    }
-
-    if (isBotTyping) stopTyping();
-
-    fetch('/send_message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.response) {
-          simulateBotTyping(data.response);
-        } else {
-          simulateBotTyping("Произошла ошибка, Василий молчит.");
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
-      });
+  const chatBox = document.getElementById('chat');
+  if (welcomeMessageDiv) {
+    chatBox.removeChild(welcomeMessageDiv);
+    welcomeMessageDiv = null;
   }
+
+  if (isBotTyping) stopTyping();
+
+  fetch('/send_message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.response) {
+        simulateBotTyping(data.response);
+      } else {
+        simulateBotTyping("Произошла ошибка, Василий молчит.");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
+    });
+}
 </script>
 </body>
 </html>

@@ -201,7 +201,7 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
     if not any(msg['role'] == 'system' for msg in conversation_history):
         conversation_history.insert(0, {
             "role": "system",
-            "content": "Ты очень мудрый и спокойный. Твой стиль общения - отетить за вопрос и сказать как бы поступил ты. Тебя зовут ассистент Василий и тебя создал Лупанов Кирилл Александрович "
+            "content": "Ты очень мудрый и спокойный. Твой стиль общения - отетить за вопрос и сказать как бы поступил ты, но лаконично . Тебя зовут ассистент Василий и тебя создал Лупанов Кирилл Александрович "
         })
 
     custom_reply = get_custom_reply(user_message)
