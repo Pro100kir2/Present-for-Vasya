@@ -198,11 +198,26 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
     if not auth_token:
         return "Ошибка: Токен не найден.", conversation_history
 
-    if not any(msg['role'] == 'system' for msg in conversation_history):
-        conversation_history.insert(0, {
+    # Получаем выбранный стиль общения из сессии (если выбран)
+    style = session.get('style', 'soulful')  # По умолчанию - душевный стиль
+
+    # Определяем содержимое в зависимости от выбранного стиля
+    if style == 'soulful':
+        print(f"Chosen style: {style}")
+        system_message = {
             "role": "system",
-            "content": "Ты очень мудрый и спокойный. Твой стиль общения - отетить за вопрос и сказать как бы поступил ты, но лаконично . Тебя зовут ассистент Василий и тебя создал Лупанов Кирилл Александрович "
-        })
+            "content": "Ты очень спокойный, душевный, веселый. Твой стиль общения - ответить за вопрос и сказать как бы поступил ты. Тебя зовут ассистент Василий и тебя создал Лупанов Кирилл Александрович "
+        }
+    else:
+        print(f"Chosen style: {style}")
+        system_message = {
+            "role": "system",
+            "content": "Ты краток и по делу. Тебя зовут Василий, и тебя создал Лупанов Кирилл Александрович."
+        }
+
+    # Добавляем это сообщение в начало истории
+    if not any(msg['role'] == 'system' for msg in conversation_history):
+        conversation_history.insert(0, system_message)
 
     custom_reply = get_custom_reply(user_message)
     if custom_reply:
@@ -224,7 +239,6 @@ def get_chat_completions(user_message, conversation_history, max_retries=3):
                 save_message_to_db(user_message, assistant_content)
                 return assistant_content, conversation_history
             elif response.status_code == 401:
-
                 auth_token = refresh_token()
                 if auth_token:
                     logging.info("🔄 Новый токен получен!")
@@ -489,6 +503,20 @@ def check_status():
             return jsonify({'ready': False})
     except Exception as e:
         return jsonify({'error': f'Ошибка при проверке статуса: {str(e)}'}), 500
+
+
+@app.route('/update_style', methods=['POST'])
+def update_style():
+    data = request.get_json()
+    style = data.get('style')
+
+    if style in ['soulful', 'laconic']:
+        session['style'] = style  # сохраняем стиль в сессии
+        print(f"✅ Style set to: {style}")
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'Invalid style'}), 400
+
 
 @app.route('/yandex_dffe98de3ad223d3.html', methods=["GET"])
 def yandex_dffe98de3ad223d3():

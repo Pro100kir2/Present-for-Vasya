@@ -251,11 +251,74 @@
       background: url('../static/icon_generate.png') no-repeat center;
       background-size: contain;
       background-color: #d1d7e3;
-      width: 60px;
-      height: 70px;
+      width: 40px;
+      height: 40px;
       border: none;
       cursor: pointer;
       border-radius: 10px; /* Добавлено для закругления углов */
+    }
+    /* Контейнер для поля ввода и кнопок */
+    .textarea-container {
+        position: relative;
+        width: 100%;
+    }
+
+    /* Поле ввода текста */
+    textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+        resize: none;
+        padding-bottom: 50px; /* Оставляем место снизу для кнопок */
+    }
+    /* Контейнер для кнопок */
+    .style-buttons {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        display: flex;
+        gap: 10px;
+    }
+    .action-buttons {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    /* Общий стиль для кнопок */
+    .style-button {
+        padding: 6px 12px;
+        font-size: 18px;
+        border: 2px solid transparent;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: background-color 0.3s, border-color 0.3s;
+        background-color: #f0f0f0;
+    }
+
+    /* Стиль для кнопки "Д" (душевный стиль) */
+    .style-button.soulful {
+        background-color: #cccccc; /* Цвет для душевного стиля */
+    }
+
+    /* Стиль для кнопки "Л" (лаконичный стиль) */
+    .style-button.laconic {
+        background-color: #cccccc; /* Цвет для лаконичного стиля */
+    }
+
+    /* Подсветка для активной кнопки */
+    .style-button.active {
+        background-color: green; /* Подсвеченный цвет для активной кнопки */
+        border-color: #ff9900; /* Подсветка границы */
+    }
+
+    /* Эффект при наведении на кнопки */
+    .style-button:hover {
+        background-color: #e0e0e0;
     }
   </style>
 </head>
@@ -303,14 +366,52 @@
   </div>
 </div>
 
-    <div class="input-area">
-      <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
-      <a href="{{ url_for('image_chat') }}" class="generate-button"></a>
-      <button id="sendButton" onclick="sendMessage()" disabled style="height: 70px;">→</button>
-    </div>
-  </div>
+<div class="input-area">
+    <!-- Контейнер для поля ввода и кнопок -->
+    <div class="textarea-container">
+        <!-- Поле ввода -->
+        <textarea id="userInput" placeholder="Введите сообщение..." oninput="autoResize(); toggleButton()"></textarea>
 
+        <!-- Кнопки под текстом -->
+        <div class="style-buttons">
+            <button class="style-button soulful active" onclick="setStyle('soulful')">Д</button>
+            <button class="style-button laconic" onclick="setStyle('laconic')">Л</button>
+        </div>
+        <div class="action-buttons">
+            <!-- Кнопка отправки сообщения -->
+            <a href="{{ url_for('image_chat') }}" class="generate-button"></a>
+            <button id="sendButton" onclick="sendMessage()">→</button>
+        </div>
+    </div>
+
+</div>
 <script>
+  let userScrolled = false;
+
+// Отслеживаем изменение прокрутки
+document.getElementById('chat').addEventListener('scroll', function() {
+    const chat = document.getElementById('chat');
+    const atBottom = chat.scrollHeight - chat.scrollTop === chat.clientHeight;
+
+    // Если пользователь прокрутил, то отключаем автоскроллирование
+    if (!atBottom) {
+        userScrolled = true;
+    } else {
+        userScrolled = false;
+    }
+});
+
+// Автоскроллирование
+function scrollToBottom() {
+    if (!userScrolled) {
+        const chat = document.getElementById('chat');
+        chat.scrollTop = chat.scrollHeight;
+    }
+}
+
+// Вызываем при загрузке страницы и при отправке сообщения
+window.onload = scrollToBottom;
+
   const textarea = document.getElementById('userInput');
   const STORAGE_KEY = 'unsentChatMessage';
 
@@ -436,22 +537,31 @@
     }
   });
 
-  function getTimeAgo(date) {
-    const now = new Date();
-    const diffMs = now - date;
-    const seconds = Math.floor(diffMs / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+      function getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const seconds = Math.floor(diffMs / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
 
-    if (seconds < 60) return 'только что';
-    if (minutes === 1) return '1 минуту назад';
-    if (minutes < 60) return `${minutes} минут назад`;
-    if (hours === 1) return '1 час назад';
-    if (hours < 24) return `${hours} часов назад`;
-    if (days === 1) return '1 день назад';
-    return `${days} дней назад`;
-  }
+        if (seconds < 60) return 'только что';
+        if (minutes === 1) return '1 минуту назад';
+        if (minutes === 2) return '2 минуты назад';
+        if (minutes === 3) return '3 минуты назад';
+        if (minutes === 4) return '4 минуты назад';
+        if (minutes < 60) return `${minutes} минут назад`;
+        if (hours === 1) return '1 час назад';
+        if (hours === 2) return '2 часа назад';
+        if (hours === 3) return '3 часа назад';
+        if (hours === 4) return '4 часа назад';
+        if (hours < 24) return `${hours} часов назад`;
+        if (days === 1) return '1 день назад';
+        if (days === 2) return '2 дня назад';
+        if (days === 3) return '3 дня назад';
+        if (days === 4) return '4 дня назад';
+        return `${days} дней назад`;
+      }
 
   function updateAllTimestamps() {
     document.querySelectorAll('.message').forEach(msg => {
@@ -568,8 +678,10 @@
 
   appendMessage(message, 'user');
   input.value = "";
+
   autoResize();
   toggleButton();
+  localStorage.removeItem(STORAGE_KEY);
 
   const chatBox = document.getElementById('chat');
   if (welcomeMessageDiv) {
@@ -597,6 +709,25 @@
       simulateBotTyping("Ошибка соединения. Василий временно оффлайн.");
     });
 }
+    // Функция для изменения стиля
+    function setStyle(style) {
+        // Отправляем на сервер для сохранения выбранного стиля
+        fetch('/update_style', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ style: style })
+        }).then(response => {
+            if (response.ok) {
+                // Обновляем интерфейс, чтобы подсветить активную кнопку
+                document.querySelectorAll('.style-button').forEach(button => {
+                    button.classList.remove('active');
+                });
+                document.querySelector(`.style-button.${style}`).classList.add('active');
+            }
+        });
+    }
 </script>
 </body>
 </html>
