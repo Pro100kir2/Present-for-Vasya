@@ -93,9 +93,6 @@ refresh_token()
 
 threading.Thread(target=token_updater, daemon=True).start()
 
-app = Flask(__name__)
-app.secret_key = 'your_secret_key'
-app.config['SECRET_KEY'] = SECRET_KEY
 # Создаём экземпляр API при старте
 fusionbrain = FusionBrainAPI()
 generation_tasks = {}  # Словарь для хранения статусов
@@ -336,7 +333,7 @@ def login():
         password = request.form.get('password')
 
         if not username or not password:
-            return render_template('login.html', error="Заполните все поля", username=username)
+            return render_template('new_project_db.html.html', error="Заполните все поля", username=username)
 
         try:
             connection = get_db_connection()
@@ -349,11 +346,11 @@ def login():
                 session['user_id'] = user[0]
                 return redirect(url_for('index'))
             else:
-                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
+                return render_template('new_project_db.html.html', error="Неверное имя пользователя или пароль", username=username)
         except mysql.connector.Error as err:
-            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
+            return render_template('new_project_db.html.html', error=f"Ошибка базы данных: {err}", username=username)
 
-    return render_template('login.html')
+    return render_template('new_project_db.html.html')
 
 
 @app.route('/clean', methods=['POST'])
