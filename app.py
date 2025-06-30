@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session, send_from_directory
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash 
 from fusionbrain_api import FusionBrainAPI
 from contextlib import closing
 from dotenv import load_dotenv
