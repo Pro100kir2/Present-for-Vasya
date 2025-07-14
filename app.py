@@ -329,7 +329,7 @@ def register():
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-def login():def login():
+def login():
     print(f"Сессия: {session}")
     if request.method == 'POST':
         username = request.form.get('name')
