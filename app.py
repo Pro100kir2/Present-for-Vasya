@@ -329,14 +329,14 @@ def register():
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+def login():def login():
     print(f"Сессия: {session}")
     if request.method == 'POST':
         username = request.form.get('name')
         password = request.form.get('password')
 
         if not username or not password:
-            return render_template('new_project_db.html.html', error="Заполните все поля", username=username)
+            return render_template('login.html', error="Заполните все поля", username=username)            return render_template('login.html', error="Заполните все поля", username=username)
 
         try:
             connection = get_db_connection()
@@ -349,12 +349,11 @@ def login():
                 session['user_id'] = user[0]
                 return redirect(url_for('index'))
             else:
-                return render_template('new_project_db.html.html', error="Неверное имя пользователя или пароль", username=username)
+                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
         except mysql.connector.Error as err:
-            return render_template('new_project_db.html.html', error=f"Ошибка базы данных: {err}", username=username)
+            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
 
-    return render_template('new_project_db.html.html')
-
+    return render_template('login.html')
 
 @app.route('/clean', methods=['POST'])
 def clear_conversation():
