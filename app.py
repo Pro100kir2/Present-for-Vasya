@@ -336,8 +336,7 @@ def login():
         password = request.form.get('password')
 
         if not username or not password:
-            return render_template('login.html', error="Заполните все поля", username=username)            return render_template('login.html', error="Заполните все поля", username=username)
-
+            return render_template('login.html', error="Заполните все поля", username=username)
         try:
             connection = get_db_connection()
             cursor = connection.cursor()
