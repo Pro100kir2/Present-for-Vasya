@@ -349,9 +349,9 @@ def login():
                 session['user_id'] = user[0]
                 return redirect(url_for('index'))
             else:
-                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
-        except mysql.connector.Error as err:
-            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
+                return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
+        except mysql.connector.Error as error
+        return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
 
     return render_template('login.html')
 
