@@ -349,7 +349,7 @@ def login():
                 return redirect(url_for('index'))
             else:
                 return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
-        except mysql.connector.Error as error
+        except mysql.connector.Error as error:
         return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
 
     return render_template('login.html')
