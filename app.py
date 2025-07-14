@@ -350,10 +350,9 @@ def login():
             else:
                 return render_template('login.html', error="Неверное имя пользователя или пароль", username=username)
         except mysql.connector.Error as error:
-        return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
-
+            return render_template('login.html', error=f"Ошибка базы данных: {err}", username=username)
     return render_template('login.html')
-
+    
 @app.route('/clean', methods=['POST'])
 def clear_conversation():
     user_id = session.get('user_id')
